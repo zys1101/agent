@@ -176,3 +176,10 @@ class QuoteReview(BaseModel):
     review_reasons: list[str]
     suggested_review_reasons: list[str]
     reviewer_notes: list[str] = []
+
+
+class ReviewLLMOutput(BaseModel):
+    """审核助手（LLM）输出：只能增加审核项，不得修改价格/工时/系数。"""
+
+    reviewer_notes: list[str] = []
+    extra_review_reasons: list[str] = []

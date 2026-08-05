@@ -45,12 +45,14 @@ class OllamaClient:
         self,
         base_url: str = "http://127.0.0.1:11434",
         model: str = "qwen3-vl:8b",
+        embed_model: str = "bge-m3:latest",
         timeout_s: float = 180.0,
         temperature: float = 0.0,
         top_p: float = 0.9,
     ):
         self.base_url = base_url.rstrip("/")
         self.model = model
+        self.embed_model = embed_model
         self.timeout_s = timeout_s
         self.temperature = temperature
         self.top_p = top_p
@@ -63,6 +65,7 @@ class OllamaClient:
         return cls(
             base_url=f"http://{host}:{port}",
             model=env.get("OLLAMA_MODEL", "qwen3-vl:8b"),
+            embed_model=env.get("EMBEDDING_MODEL", "bge-m3:latest"),
         )
 
     def generate(self, prompt: str, images: list[str] | None = None) -> str:
@@ -103,6 +106,25 @@ class OllamaClient:
             return _extract_json(text)
         except (ValueError, json.JSONDecodeError) as exc:
             raise LLMOutputError(f"invalid JSON from model: {exc}") from exc
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        """调用 Ollama /api/embed（默认 bge-m3），供 RAG 使用。"""
+        if not texts:
+            return []
+        try:
+            resp = httpx.post(
+                f"{self.base_url}/api/embed",
+                json={"model": self.embed_model, "input": texts},
+                timeout=self.timeout_s,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        except (httpx.HTTPError, ValueError) as exc:
+            raise LLMUnavailableError(f"embedding request failed: {exc}") from exc
+        embeddings = data.get("embeddings")
+        if not embeddings:
+            raise LLMOutputError("embedding response contains no embeddings")
+        return embeddings
 
     def generate_structured(
         self,

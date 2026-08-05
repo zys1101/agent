@@ -21,6 +21,7 @@ from quote_agent.cloud import CloudClient, MockCloudServer, MockCloudStore
 from quote_agent.config import QuoteRules
 from quote_agent.llm import OllamaClient
 from quote_agent.quote_engine import QuoteEngine
+from quote_agent.rag import RagStore
 from quote_agent.worker import Worker, WorkerSettings
 
 SAMPLE_TEXT = """客户需求：设计一套用于电机壳体压装的工装。
@@ -77,13 +78,15 @@ def _seed_demo(store: MockCloudStore, tmp: Path) -> str:
 def _run_demo(settings: WorkerSettings, interval_s: float) -> int:
     rules = QuoteRules.load()
     engine = QuoteEngine(rules)
+    llm = OllamaClient.from_env()
     with tempfile.TemporaryDirectory() as tmp:
         store = MockCloudStore()
         task_id = _seed_demo(store, Path(tmp))
         server = MockCloudServer(store).start()
         try:
             cloud = CloudClient(server.base_url, "dev-token", settings.agent_id)
-            worker = Worker(cloud, OllamaClient.from_env(), rules, engine, settings)
+            rag = RagStore.from_env(embed_fn=llm.embed) if settings.rag_enabled else None
+            worker = Worker(cloud, llm, rules, engine, settings, rag=rag)
             task = cloud.claim()
             assert task is not None
             result = worker.run_task(task)
@@ -95,6 +98,10 @@ def _run_demo(settings: WorkerSettings, interval_s: float) -> int:
             print(f"强制审核: {summary['manual_review_required']}")
             for reason in summary["manual_review_reasons"]:
                 print(f"  - {reason}")
+            if summary.get("reviewer_notes"):
+                print("审核意见:")
+                for note in summary["reviewer_notes"]:
+                    print(f"  * {note}")
             if summary["clarification_questions"]:
                 print("澄清问题:")
                 for q in summary["clarification_questions"]:
@@ -109,12 +116,14 @@ def _run_demo(settings: WorkerSettings, interval_s: float) -> int:
 def _run_loop(settings: WorkerSettings, once: bool, interval_s: float) -> int:
     rules = QuoteRules.load()
     engine = QuoteEngine(rules)
+    llm = OllamaClient.from_env()
     base_url = os.environ.get("CLOUD_API_BASE_URL", "")
     token = os.environ.get("AGENT_API_TOKEN", "")
     if not base_url or not token:
         raise SystemExit("缺少 CLOUD_API_BASE_URL / AGENT_API_TOKEN，请检查 .env（或用 --demo）")
     cloud = CloudClient(base_url, token, settings.agent_id)
-    worker = Worker(cloud, OllamaClient.from_env(), rules, engine, settings)
+    rag = RagStore.from_env(embed_fn=llm.embed) if settings.rag_enabled else None
+    worker = Worker(cloud, llm, rules, engine, settings, rag=rag)
     while True:
         task = cloud.claim()
         if task is None:

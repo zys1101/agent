@@ -6,7 +6,7 @@ from pathlib import Path
 from quote_agent.cloud import CloudClient, MockCloudServer, MockCloudStore
 from quote_agent.config import QuoteRules
 from quote_agent.extraction import ImageTranscript, ImageTranscripts
-from quote_agent.models import ProjectClassification, ProjectRequirement
+from quote_agent.models import ProjectClassification, ProjectRequirement, ReviewLLMOutput
 from quote_agent.quote_engine import QuoteEngine
 from quote_agent.worker import Worker, WorkerSettings
 
@@ -58,6 +58,11 @@ class FakeLLM:
             return ImageTranscripts(
                 files=[ImageTranscript(original_name="sketch.png", summary="工件信息", key_facts=["200x150mm"])]
             )
+        if model_cls is ReviewLLMOutput:
+            return ReviewLLMOutput(
+                reviewer_notes=["压装力缺失需先向客户澄清"],
+                extra_review_reasons=["missing_load_or_force"],
+            )
         raise AssertionError(f"unexpected model_cls: {model_cls}")
 
 
@@ -81,6 +86,7 @@ def _make_worker(tmp_path, store):
         agent_id="test-agent",
         work_dir=tmp_path / "incoming",
         snapshot_dir=tmp_path / "snapshots",
+        sqlite_path=tmp_path / "agent.db",
     )
     worker = Worker(
         cloud=CloudClient("http://unused", "t", "test-agent"),
@@ -112,6 +118,8 @@ def test_worker_end_to_end(tmp_path):
         assert "maximum_press_force" in summary["missing_information"]
         assert "interface" in summary["missing_information"]
         assert summary["price"]["recommended"] is not None
+        assert summary["reviewer_notes"] == ["压装力缺失需先向客户澄清"]
+        assert "missing_load_or_force" in summary["manual_review_reasons"]
         assert result["_cloud"]["quote_id"].startswith("quote_")
 
         # 快照已保存，原始目录已清理
@@ -190,6 +198,7 @@ def test_worker_passes_images_to_extraction(tmp_path):
             agent_id="test-agent",
             work_dir=tmp_path / "incoming",
             snapshot_dir=tmp_path / "snapshots",
+            sqlite_path=tmp_path / "agent.db",
         )
         fake_llm = FakeLLM()
         worker = Worker(

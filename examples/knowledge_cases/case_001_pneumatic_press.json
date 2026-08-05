@@ -1,0 +1,13 @@
+{
+  "case_id": "case_001",
+  "project_type": "pneumatic_press_fixture",
+  "summary": "电机壳体轴承压装工装：气缸+导向+定位结构，单件节拍45秒，定位精度±0.05mm，交付3D装配、8张2D零件图和BOM",
+  "deliverables": ["three_d_assembly", "two_d_part_drawing", "bom"],
+  "risk_notes": [
+    "压装力必须开工前确认，缺失时先给澄清问题",
+    "安装接口与工件包络尺寸是常见缺失项",
+    "气源压力与节拍需在方案阶段确认"
+  ],
+  "typical_hours": 156,
+  "price_range_cny": [48000, 65000]
+}

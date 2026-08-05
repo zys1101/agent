@@ -1,0 +1,12 @@
+{
+  "case_id": "case_002",
+  "project_type": "sheet_metal_part",
+  "summary": "机柜钣金件设计：折弯件+罩壳，材料Q235，板厚1.5-2mm，交付3D模型与2D工程图",
+  "deliverables": ["three_d_model", "two_d_part_drawing"],
+  "risk_notes": [
+    "折弯半径与展开计算需图纸支撑",
+    "钣金件报价须确认表面处理（喷涂/拉丝）是否在范围"
+  ],
+  "typical_hours": 12,
+  "price_range_cny": [3500, 6500]
+}

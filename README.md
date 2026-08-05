@@ -28,6 +28,21 @@
 - 图片 OCR：JPG/PNG 直接以 base64 传给视觉模型（`qwen3-vl`）阅读，替换"图片暂不可读"占位。
 - `scripts/run_worker.py --demo` 的样例任务包含一张带英文标注的图片，可验证多文件混合链路。
 
+## 当前里程碑（M4）
+
+- SQLite 离线缓存（`src/quote_agent/cache.py`）：已完成但未回传的结果写入 `pending_results`，任务重新投递后按 `Idempotency-Key` 直接重传，不重复报价；全部阶段写入 `audit_log`。
+- Qdrant RAG（`src/quote_agent/rag.py`）：脱敏历史案例向量化检索（`bge-m3` embedding），案例只存脱敏字段，原始客户文件不入库。
+- ReviewAgent（`src/quote_agent/review.py`）：LLM 审核助手，只能增加审核项与意见，不得修改价格/工时/系数；RAG 检索结果作为审核上下文。
+- `scripts/seed_rag_cases.py`：把 `examples/knowledge_cases/*.json` 写入向量库。
+
+### M4 运行方式
+
+```powershell
+docker compose up -d qdrant
+docker compose run --rm quote-agent python scripts/seed_rag_cases.py
+docker compose run --rm -e RAG_ENABLED=true quote-agent python scripts/run_worker.py --demo --once
+```
+
 ## 快速开始（Windows + Docker Desktop）
 
 ```powershell
