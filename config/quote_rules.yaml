@@ -54,6 +54,48 @@ project_types:
   single_station_machine:  {base_hours: 120, base_cycle_days: 20, default_role: technical_lead,            manual_review: true}
   design_review:           {base_hours: 12,  base_cycle_days: 3,  default_role: senior_mechanical_engineer, manual_review: false}
 
+# 需求完整度模板：QRS 9.1/9.2
+# field state: confirmed=100% 权重, inferred=50%, unknown=0%, not_applicable 不计入分母
+completeness_templates:
+  generic:
+    fields:
+      function_description: {weight: 1.0}
+      deliverables:          {weight: 1.5}
+      deadline:              {weight: 1.5}
+      materials:             {weight: 1.0}
+      revision_policy:       {weight: 1.0}
+      scope:                 {weight: 1.0}
+      acceptance:            {weight: 1.0}
+  fixture:
+    fields:
+      function_description: {weight: 1.0}
+      deliverables:          {weight: 1.5}
+      deadline:              {weight: 1.5}
+      materials:             {weight: 1.0}
+      revision_policy:       {weight: 1.0}
+      scope:                 {weight: 1.0}
+      acceptance:            {weight: 1.5}
+      workpiece:             {weight: 1.5}
+      interface:             {weight: 1.5}
+      load:                  {weight: 1.5}
+      cycle_time:            {weight: 1.0}
+      precision:             {weight: 1.5}
+      utilities:             {weight: 1.0}
+      safety:                {weight: 1.0}
+
+project_families:
+  simple_part: generic
+  machined_part: generic
+  sheet_metal_part: generic
+  drawing_conversion: generic
+  inspection_fixture: fixture
+  assembly_fixture: fixture
+  welding_fixture: fixture
+  pneumatic_press_fixture: fixture
+  loading_module: fixture
+  single_station_machine: fixture
+  design_review: generic
+
 deliverables:
   concept_design:            {default_hours: 12, role: senior_mechanical_engineer, per_unit: false, manual_review: false}
   three_d_model:             {default_hours: 3,  role: junior_mechanical_engineer, per_unit: true,  manual_review: false}

@@ -56,6 +56,14 @@ class DeliverableRule(BaseModel):
     manual_review: bool = False
 
 
+class CompletenessField(BaseModel):
+    weight: float = Field(gt=0)
+
+
+class CompletenessTemplate(BaseModel):
+    fields: dict[str, CompletenessField]
+
+
 class BandRule(BaseModel):
     max_count: int | None = None
     factor: float = Field(ge=1.0)
@@ -115,6 +123,8 @@ class QuoteRules(BaseModel):
     price_range_by_completeness: dict[str, PriceRangeTier]
     project_types: dict[str, ProjectTypeRule]
     deliverables: dict[str, DeliverableRule]
+    completeness_templates: dict[str, CompletenessTemplate]
+    project_families: dict[str, str]
     part_count_factors: dict[str, BandRule]
     assembly_complexity: dict[str, ComplexityRule]
     precision: dict[str, PrecisionRule]
@@ -136,6 +146,14 @@ class QuoteRules(BaseModel):
     @model_validator(mode="after")
     def _cross_validate(self) -> "QuoteRules":
         rate_names = set(self.rate_cards)
+        if not self.completeness_templates:
+            raise ValueError("completeness_templates must not be empty")
+        unknown_families = set(self.project_families.values()) - set(self.completeness_templates)
+        if unknown_families:
+            raise ValueError(f"project_families reference unknown templates: {sorted(unknown_families)}")
+        missing_families = set(self.project_types) - set(self.project_families)
+        if missing_families:
+            raise ValueError(f"project_types missing family mapping: {sorted(missing_families)}")
         for code, pt in self.project_types.items():
             if pt.default_role not in rate_names:
                 raise ValueError(f"project_types[{code}].default_role unknown: {pt.default_role}")

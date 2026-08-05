@@ -213,10 +213,18 @@ class QuoteEngine:
             required_reasons.append("project_type_manual_review")
         if requirement.completeness_score < rules.manual_review.completeness_below:
             required_reasons.append("completeness_below_0_80")
-        if recommended >= rules.manual_review.quote_amount_above_cny:
+        if (
+            price is not None
+            and price.recommended is not None
+            and price.recommended >= rules.manual_review.quote_amount_above_cny
+        ):
             required_reasons.append("quote_amount_above_threshold")
         if requirement.scope_uncertain:
             required_reasons.append("scope_uncertain")
+        if requirement.missing_workpiece_info:
+            required_reasons.append("missing_workpiece_info")
+        if requirement.missing_acceptance_criteria:
+            required_reasons.append("missing_acceptance_criteria")
         if requirement.input_conflicts:
             required_reasons.append("input_conflicts")
         if requirement.deadline_workdays is None:

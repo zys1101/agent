@@ -65,6 +65,7 @@ def test_completeness_below_0_60_preliminary_research(engine: QuoteEngine):
     assert result.price.recommended is None
     assert result.manual_review_required
     assert "completeness_below_0_60" in result.review_reasons
+    assert "quote_amount_above_threshold" not in result.review_reasons
 
 
 def test_amount_above_50000_requires_review(engine: QuoteEngine):

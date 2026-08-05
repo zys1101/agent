@@ -24,9 +24,13 @@ class ProjectRequirement(BaseModel):
     project_type_candidate: str
     requested_deliverables: list[str | DeliverableRequest] = []
     deadline_workdays: float | None = None
+    function_description: str = ""
+    provided_materials: list[str] = []
+    revision_policy: str | None = None  # "limited" | "unlimited" | None
     unknowns: list[str] = []
     risks: list[str] = []
-    completeness_score: float = Field(ge=0, le=1)
+    # 模型可省略；Worker 在 VALIDATE_REQUIREMENTS 阶段必须用确定性算法重算（QRS 9.2）
+    completeness_score: float = Field(default=0.0, ge=0, le=1)
     evidence: list[Evidence] = []
 
     # 复杂度输入
@@ -38,12 +42,29 @@ class ProjectRequirement(BaseModel):
     # 风险输入
     missing_critical_interface: bool = False
     missing_load_or_force: bool = False
+    missing_workpiece_info: bool = False
+    missing_acceptance_criteria: bool = False
     unverified_solution: bool = False
     multi_party_coordination: bool = False
     new_customer: bool = False
     unlimited_revisions: bool = False
     high_responsibility_industry: bool = False
     scope_uncertain: bool = False
+
+    # 完整度关键字段状态（工装/夹具类附加字段）
+    acceptance_criteria_known: bool = False
+    workpiece_info_known: bool = False
+    cycle_time_known: bool = False
+    utilities_known: bool = False
+    safety_requirements_known: bool = False
+
+    # 客户可读输出
+    assumptions: list[str] = []
+    exclusions: list[str] = []
+    clarification_questions: list[str] = []
+
+    # 由确定性完整度计算器回填
+    field_states: dict[str, str] = {}
 
     # 输入质量（由 VALIDATE_REQUIREMENTS 阶段写入）
     input_conflicts: list[str] = []

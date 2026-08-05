@@ -11,6 +11,18 @@
 - `tests/`：边界值测试（完整度 0.80、交期 0.70、金额阈值、精度、零件数、确定性）。
 - Docker 开发环境：宿主机无 Python，一切在容器内运行。
 
+## 当前里程碑（M2）
+
+- `src/quote_agent/llm.py`：Ollama 客户端（temperature=0、JSON 输出、失败自动修复一次）。
+- `src/quote_agent/extraction.py` / `classification.py`：需求提取与项目分类 Agent（只出结构化需求，不出价格）。
+- `src/quote_agent/completeness.py`：需求完整度**确定性重算**（QRS 9.1/9.2），不信任模型自报分值。
+- `src/quote_agent/file_parser.py`：文本型 PDF / Excel / TXT 解析（图片 OCR 由视觉模型在 M3 接入）。
+- `src/quote_agent/cloud.py`：云端 API 客户端 + 内存版 Mock 云端（HTTP，支持租约/心跳/幂等回传）。
+- `src/quote_agent/worker.py`：按 AWF-001 主流程执行任务：领取→下载→解析→提取→校验→分类→报价→回传→清理。
+- `scripts/run_worker.py`：Worker 入口（`--demo` 可用本地 mock 云端全链路跑一个样例任务）。
+- `scripts/mock_cloud.py`：独立 Mock 云端 HTTP 服务。
+- `scripts/try_ollama.py`：验证 Ollama 连通性与 JSON 输出路径。
+
 ## 快速开始（Windows + Docker Desktop）
 
 ```powershell
@@ -18,6 +30,9 @@ docker compose build
 docker compose run --rm quote-agent python scripts/validate_rules.py
 docker compose run --rm quote-agent python scripts/test_quote.py
 docker compose run --rm quote-agent pytest -q
+docker compose run --rm quote-agent python scripts/try_ollama.py
+docker compose run --rm quote-agent python scripts/run_worker.py --demo --once
+docker compose up -d mock-cloud          # 独立 Mock 云端（可选）
 ```
 
 ## 目录结构
