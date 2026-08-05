@@ -23,6 +23,11 @@
 - `scripts/mock_cloud.py`：独立 Mock 云端 HTTP 服务。
 - `scripts/try_ollama.py`：验证 Ollama 连通性与 JSON 输出路径。
 
+## 当前里程碑（M3）
+
+- 图片 OCR：JPG/PNG 直接以 base64 传给视觉模型（`qwen3-vl`）阅读，替换"图片暂不可读"占位。
+- `scripts/run_worker.py --demo` 的样例任务包含一张带英文标注的图片，可验证多文件混合链路。
+
 ## 快速开始（Windows + Docker Desktop）
 
 ```powershell

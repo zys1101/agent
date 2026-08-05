@@ -4,7 +4,42 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+NULL_DEFAULTS = {
+    "requested_deliverables": [],
+    "unknowns": [],
+    "risks": [],
+    "evidence": [],
+    "provided_materials": [],
+    "professional_scope": [],
+    "assumptions": [],
+    "exclusions": [],
+    "clarification_questions": [],
+    "input_conflicts": [],
+    "field_states": {},
+    "function_description": "",
+    "assembly_complexity": "simple",
+    "precision": "unspecified",
+    "completeness_score": 0.0,
+    "missing_critical_interface": False,
+    "missing_load_or_force": False,
+    "missing_workpiece_info": False,
+    "missing_acceptance_criteria": False,
+    "unverified_solution": False,
+    "multi_party_coordination": False,
+    "new_customer": False,
+    "unlimited_revisions": False,
+    "high_responsibility_industry": False,
+    "scope_uncertain": False,
+    "acceptance_criteria_known": False,
+    "workpiece_info_known": False,
+    "cycle_time_known": False,
+    "utilities_known": False,
+    "safety_requirements_known": False,
+    "fixed_fees_cny": 0.0,
+}
 
 
 class Evidence(BaseModel):
@@ -20,6 +55,14 @@ class DeliverableRequest(BaseModel):
 
 class ProjectRequirement(BaseModel):
     """结构化需求输入（由后续 LLM 提取阶段产出，engine 只消费此结构）。"""
+
+    # LLM 常把未知字段输出为 null：统一回填默认值，避免 Schema 校验被 null 击穿。
+    @field_validator("*", mode="before")
+    @classmethod
+    def _coerce_null_to_default(cls, value, info):
+        if value is None and info.field_name in NULL_DEFAULTS:
+            return NULL_DEFAULTS[info.field_name]
+        return value
 
     project_type_candidate: str
     requested_deliverables: list[str | DeliverableRequest] = []

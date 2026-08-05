@@ -24,6 +24,7 @@ class ParsedFile(BaseModel):
     text: str = ""
     table_summary: str = ""
     ocr_pending: bool = False
+    image_path: str | None = None  # 图片本地路径，供视觉模型读取
     errors: list[str] = Field(default_factory=list)
 
 
@@ -99,6 +100,7 @@ class FileParser:
             file_id=file_id,
             original_name=original_name,
             mime_type=mime_type,
-            text=f"[图片文件 {original_name}，OCR 将在后续里程碑由视觉模型处理]",
+            text=f"[图片文件 {original_name}，由视觉模型读取]",
             ocr_pending=True,
+            image_path=str(path),
         )

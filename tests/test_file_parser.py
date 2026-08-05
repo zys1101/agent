@@ -33,3 +33,4 @@ def test_parse_image_marks_ocr_pending(tmp_path):
     path.write_bytes(b"\x89PNG\r\n\x1a\n fake image")
     result = FileParser().parse(path, "f3", "photo.png", "image/png")
     assert result.ocr_pending is True
+    assert result.image_path == str(path)

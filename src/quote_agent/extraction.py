@@ -2,10 +2,22 @@
 
 from __future__ import annotations
 
+from pydantic import BaseModel
+
 from .config import QuoteRules
 from .file_parser import ParsedFile
 from .llm import LLM
 from .models import ProjectRequirement
+
+
+class ImageTranscript(BaseModel):
+    original_name: str
+    summary: str
+    key_facts: list[str]
+
+
+class ImageTranscripts(BaseModel):
+    files: list[ImageTranscript]
 
 
 def _enums(rules: QuoteRules) -> str:
@@ -48,6 +60,8 @@ class ExtractionAgent:
 3. 不确定的内容必须列入 unknowns / risks / clarification_questions。
 4. missing_critical_interface、missing_load_or_force、scope_uncertain 等布尔字段，仅在资料明确时才可为 false。
 5. requested_deliverables 只能使用给定枚举，并按数量使用 {"code": "...", "quantity": N}。
+6. 如果资料已明确说明服务范围（例如"仅需设计服务，不包含制造与调试"），scope_uncertain 必须为 false。
+7. 已由资料提供的信息（含图片转录）不得再列入 clarification_questions。
 输出 JSON 可包含以下字段（未知的省略或为 null）：
 project_type_candidate, requested_deliverables, deadline_workdays, function_description,
 provided_materials, revision_policy, unknowns, risks,
@@ -65,6 +79,43 @@ assumptions, exclusions, clarification_questions, evidence
 
     def extract(self, form: dict, parsed: list[ParsedFile]) -> ProjectRequirement:
         user = _build_prompt(self.rules, form, parsed) + "\n\n" + _enums(self.rules)
-        result = self.llm.generate_structured(self.SYSTEM_PROMPT, user, ProjectRequirement)
+        images = [pf.image_path for pf in parsed if pf.image_path and not pf.errors]
+        if images:
+            user += (
+                f"\n\n说明：随附 {len(images)} 张图片。请先阅读图片内容，"
+                "把图片中出现的尺寸、数量、精度、材料、结构等关键信息纳入提取结果。"
+            )
+            transcripts = self._transcribe_images(images)
+            if transcripts is not None and transcripts.files:
+                lines = [
+                    f"- {t.original_name}: {t.summary}；关键事实：{'；'.join(t.key_facts)}"
+                    for t in transcripts.files
+                ]
+                user += "\n\n图片转录结果（供你直接引用，无需再向客户索要）：\n" + "\n".join(lines)
+        result = self.llm.generate_structured(
+            self.SYSTEM_PROMPT,
+            user,
+            ProjectRequirement,
+            images=images,
+        )
         assert isinstance(result, ProjectRequirement)
+        # 确定性回填：模型可能不把已解析的附件名写入 provided_materials
+        if not result.provided_materials:
+            result.provided_materials = [pf.original_name for pf in parsed if pf.original_name]
         return result
+
+    def _transcribe_images(self, images: list[str]) -> ImageTranscripts | None:
+        try:
+            result = self.llm.generate_structured(
+                "你是机械设计图纸/照片的图片阅读助手。逐字转录图片中的文字，并提取关键事实（尺寸、数量、精度、材料、结构）。",
+                "请阅读随附图片，输出 JSON："
+                '{"files": [{"original_name": "...", "summary": "...", "key_facts": ["..."]}]}。'
+                "图片文字不确定时在 key_facts 中标注不确定。",
+                ImageTranscripts,
+                images=images,
+            )
+            assert isinstance(result, ImageTranscripts)
+            return result
+        except Exception:
+            # 转录失败不阻塞：图片仍随提取请求直接传给模型
+            return None

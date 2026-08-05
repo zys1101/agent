@@ -4,7 +4,7 @@ import pytest
 
 from quote_agent.classification import ClassificationAgent
 from quote_agent.config import QuoteRules
-from quote_agent.extraction import ExtractionAgent
+from quote_agent.extraction import ExtractionAgent, ImageTranscript, ImageTranscripts
 from quote_agent.file_parser import ParsedFile
 from quote_agent.models import ProjectClassification, ProjectRequirement
 
@@ -15,15 +15,22 @@ class FakeLLM:
         self.classification = classification
         self.fail_extraction_first = fail_extraction_first
         self.calls = 0
+        self.last_images = None
 
     def generate_structured(self, system, user, model_cls, images=None):
         self.calls += 1
+        if model_cls is ProjectRequirement:
+            self.last_images = images
         if self.fail_extraction_first and self.calls == 1:
             raise ValueError("invalid json")  # 由修复逻辑处理
         if model_cls is ProjectRequirement:
             return ProjectRequirement.model_validate(self.extraction)
         if model_cls is ProjectClassification:
             return ProjectClassification.model_validate(self.classification)
+        if model_cls is ImageTranscripts:
+            return ImageTranscripts(
+                files=[ImageTranscript(original_name="a.png", summary="工件信息", key_facts=["200x150mm"])]
+            )
         raise AssertionError(f"unexpected model_cls: {model_cls}")
 
 
@@ -49,6 +56,7 @@ def test_extraction_agent_builds_prompt_and_returns_model(rules: QuoteRules):
     assert isinstance(result, ProjectRequirement)
     assert result.project_type_candidate == "pneumatic_press_fixture"
     assert len(result.requested_deliverables) == 2
+    assert result.provided_materials == ["req.txt"]  # 由已解析文件确定性回填
 
 
 def test_classification_agent_returns_model(rules: QuoteRules):
@@ -85,3 +93,18 @@ def test_extraction_prompt_contains_enums(rules: QuoteRules, monkeypatch):
     assert "pneumatic_press_fixture" in captured["user"]
     assert "two_d_part_drawing" in captured["user"]
     assert "high_precision" in captured["user"]
+
+
+def test_extraction_passes_image_paths_to_llm(rules: QuoteRules):
+    fake = FakeLLM(
+        extraction={"project_type_candidate": "simple_part", "completeness_score": 0.9},
+        classification={"project_type": "simple_part", "confidence": 0.9},
+    )
+    agent = ExtractionAgent(fake, rules)
+    parsed = [
+        ParsedFile(file_id="f1", original_name="a.png", mime_type="image/png", ocr_pending=True, image_path="/tmp/a.png"),
+        ParsedFile(file_id="f2", original_name="b.txt", mime_type="text/plain", text="hello"),
+        ParsedFile(file_id="f3", original_name="c.png", mime_type="image/png", ocr_pending=True, image_path="/tmp/c.png", errors=["x"]),
+    ]
+    agent.extract({}, parsed)
+    assert fake.last_images == ["/tmp/a.png"]  # 有错误标记的图片不传

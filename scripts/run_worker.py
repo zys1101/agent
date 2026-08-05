@@ -15,6 +15,7 @@ import time
 from pathlib import Path
 
 from dotenv import load_dotenv
+from PIL import Image, ImageDraw
 
 from quote_agent.cloud import CloudClient, MockCloudServer, MockCloudStore
 from quote_agent.config import QuoteRules
@@ -30,9 +31,22 @@ SAMPLE_TEXT = """客户需求：设计一套用于电机壳体压装的工装。
 仅需设计服务，不包含制造与调试。"""
 
 
+def _make_demo_image(tmp: Path) -> Path:
+    """生成一张英文标注的样例图片（容器内无中文字体，避免乱码）。"""
+    img = Image.new("RGB", (1000, 260), "white")
+    draw = ImageDraw.Draw(img)
+    draw.text((40, 50), "Workpiece: motor housing, 200x150mm, 5kg", fill="black")
+    draw.text((40, 110), "Positioning accuracy: +/-0.05mm", fill="black")
+    draw.text((40, 170), "Quantity: 3 sets per month", fill="black")
+    path = tmp / "sketch.png"
+    img.save(path)
+    return path
+
+
 def _seed_demo(store: MockCloudStore, tmp: Path) -> str:
     txt = tmp / "requirements_sample.txt"
     txt.write_text(SAMPLE_TEXT, encoding="utf-8")
+    img = _make_demo_image(tmp)
     return store.seed_task(
         customer_form={
             "project_name": "气动压装工装设计（样例）",
@@ -48,7 +62,14 @@ def _seed_demo(store: MockCloudStore, tmp: Path) -> str:
                 "mime_type": "text/plain",
                 "size_bytes": txt.stat().st_size,
                 "local_path": str(txt),
-            }
+            },
+            {
+                "file_id": "file_02",
+                "original_name": "sketch.png",
+                "mime_type": "image/png",
+                "size_bytes": img.stat().st_size,
+                "local_path": str(img),
+            },
         ],
     )
 

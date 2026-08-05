@@ -1,17 +1,23 @@
 """Worker 端到端测试：mock 云端 + FakeLLM + 规则引擎 + 快照 + 清理。"""
 
 import json
+from pathlib import Path
 
 from quote_agent.cloud import CloudClient, MockCloudServer, MockCloudStore
 from quote_agent.config import QuoteRules
+from quote_agent.extraction import ImageTranscript, ImageTranscripts
 from quote_agent.models import ProjectClassification, ProjectRequirement
 from quote_agent.quote_engine import QuoteEngine
 from quote_agent.worker import Worker, WorkerSettings
 
 
 class FakeLLM:
+    def __init__(self):
+        self.last_images = None
+
     def generate_structured(self, system, user, model_cls, images=None):
         if model_cls is ProjectRequirement:
+            self.last_images = images
             return ProjectRequirement.model_validate(
                 {
                     "project_type_candidate": "pneumatic_press_fixture",
@@ -47,6 +53,10 @@ class FakeLLM:
                         {"project_type": "assembly_fixture", "confidence": 0.12},
                     ],
                 }
+            )
+        if model_cls is ImageTranscripts:
+            return ImageTranscripts(
+                files=[ImageTranscript(original_name="sketch.png", summary="工件信息", key_facts=["200x150mm"])]
             )
         raise AssertionError(f"unexpected model_cls: {model_cls}")
 
@@ -152,6 +162,51 @@ def test_worker_fail_marks_task_failed(tmp_path):
             pass
         assert store.task(task_id)["status"] == "failed"
         assert store.task(task_id)["error"]["error_code"] == "INTERNAL_ERROR"
+        assert not (settings.work_dir / task_id).exists()
+    finally:
+        server.stop()
+
+
+def test_worker_passes_images_to_extraction(tmp_path):
+    store = MockCloudStore()
+    server = MockCloudServer(store).start()
+    try:
+        img = tmp_path / "sketch.png"
+        img.write_bytes(b"\x89PNG\r\n\x1a\n fake image content")
+        task_id = store.seed_task(
+            customer_form={"project_name": "图片任务", "customer_description": "", "deadline_date": "", "requested_deliverables": [], "currency": "CNY"},
+            files=[
+                {
+                    "file_id": "file_02",
+                    "original_name": "sketch.png",
+                    "mime_type": "image/png",
+                    "size_bytes": img.stat().st_size,
+                    "local_path": str(img),
+                }
+            ],
+        )
+        rules = QuoteRules.load()
+        settings = WorkerSettings(
+            agent_id="test-agent",
+            work_dir=tmp_path / "incoming",
+            snapshot_dir=tmp_path / "snapshots",
+        )
+        fake_llm = FakeLLM()
+        worker = Worker(
+            cloud=CloudClient(server.base_url, "t", "test-agent"),
+            llm=fake_llm,
+            rules=rules,
+            engine=QuoteEngine(rules),
+            settings=settings,
+        )
+        task = worker.cloud.claim()
+        assert task is not None and task.task_id == task_id
+        result = worker.run_task(task)
+        assert result["result"]["project_type"] == "pneumatic_press_fixture"
+        assert fake_llm.last_images and len(fake_llm.last_images) == 1
+        passed_image = Path(fake_llm.last_images[0])
+        assert passed_image.name == "file_02_sketch.png"
+        assert settings.work_dir in passed_image.parents  # 传的是任务临时目录内的下载副本
         assert not (settings.work_dir / task_id).exists()
     finally:
         server.stop()
