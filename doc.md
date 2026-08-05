@@ -19,4 +19,7 @@
 7. 测试案例与验收标准
 08-test-and-evaluation-plan.md
 
+8. 服务器后端开发文档（NestJS：报价 Agent 接口）
+09-server-backend-dev.md
+
 等有历史项目数据后，再写 RAG 知识库规范。
