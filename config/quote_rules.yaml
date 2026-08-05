@@ -1,0 +1,126 @@
+# 机械设计 AI 报价系统 - 报价规则配置
+# 规则集版本: 0.1.0-draft（对应 QRS-001）
+# 说明：所有工时/费率/系数均为示例占位值，上线前必须由业务负责人确认（QRS 第 18 节）。
+# 任何修改都必须升级 rule_set_version 并走 QRS 第 16.1 节变更流程。
+
+rule_set_version: "0.1.0-draft"
+currency: "CNY"
+quote_type_default: "budget_range"
+
+operating_assumptions:
+  effective_engineering_hours_per_day: 6
+  default_revision_rounds: 2
+  min_quote_amount_cny: 0            # 待业务确认
+  quote_rounding_unit_cny: 100
+  communication_and_revision_pct: 0.15   # 沟通与修改工时占调整前工时的比例（MVP 默认，待确认）
+  max_complexity_factor: 2.00
+  max_risk_buffer_ratio: 0.50
+  fixed_fees_cny: 0
+
+rate_cards:
+  drafter:                  {internal: 100, external: 180}
+  junior_mechanical_engineer: {internal: 120, external: 220}
+  mechanical_engineer:      {internal: 180, external: 320}
+  senior_mechanical_engineer: {internal: 260, external: 480}
+  technical_lead:           {internal: 350, external: 650}
+  project_manager:          {internal: 200, external: 360}
+  simulation_engineer:      {internal: 280, external: 550}
+  field_engineer:           {internal: 300, external: 600}
+
+price_range_by_completeness:
+  high:
+    min_score: 0.90
+    min_factor: 0.95
+    max_factor: 1.05
+  medium:
+    min_score: 0.80
+    min_factor: 0.90
+    max_factor: 1.10
+  low:
+    min_score: 0.60
+    min_factor: 0.85
+    max_factor: 1.20
+
+project_types:
+  simple_part:             {base_hours: 8,   base_cycle_days: 2,  default_role: junior_mechanical_engineer, manual_review: false}
+  machined_part:           {base_hours: 16,  base_cycle_days: 3,  default_role: mechanical_engineer,        manual_review: false}
+  sheet_metal_part:        {base_hours: 12,  base_cycle_days: 3,  default_role: mechanical_engineer,        manual_review: false}
+  drawing_conversion:      {base_hours: 2,   base_cycle_days: 1,  default_role: drafter,                    manual_review: false}
+  inspection_fixture:      {base_hours: 24,  base_cycle_days: 5,  default_role: mechanical_engineer,        manual_review: false}
+  assembly_fixture:        {base_hours: 36,  base_cycle_days: 7,  default_role: mechanical_engineer,        manual_review: false}
+  welding_fixture:         {base_hours: 48,  base_cycle_days: 10, default_role: senior_mechanical_engineer, manual_review: true}
+  pneumatic_press_fixture: {base_hours: 72,  base_cycle_days: 12, default_role: senior_mechanical_engineer, manual_review: true}
+  loading_module:          {base_hours: 80,  base_cycle_days: 15, default_role: senior_mechanical_engineer, manual_review: true}
+  single_station_machine:  {base_hours: 120, base_cycle_days: 20, default_role: technical_lead,            manual_review: true}
+  design_review:           {base_hours: 12,  base_cycle_days: 3,  default_role: senior_mechanical_engineer, manual_review: false}
+
+deliverables:
+  concept_design:            {default_hours: 12, role: senior_mechanical_engineer, per_unit: false, manual_review: false}
+  three_d_model:             {default_hours: 3,  role: junior_mechanical_engineer, per_unit: true,  manual_review: false}
+  three_d_assembly:          {default_hours: 24, role: mechanical_engineer,        per_unit: true,  manual_review: false}
+  two_d_part_drawing:        {default_hours: 2,  role: drafter,                    per_unit: true,  manual_review: false}
+  two_d_assembly_drawing:    {default_hours: 8,  role: drafter,                    per_unit: true,  manual_review: false}
+  bom:                       {default_hours: 6,  role: drafter,                    per_unit: false, manual_review: false}
+  standard_part_selection:   {default_hours: 2,  role: mechanical_engineer,        per_unit: true,  manual_review: false}
+  pneumatic_selection:       {default_hours: 16, role: senior_mechanical_engineer, per_unit: false, manual_review: false}
+  motion_interference_check: {default_hours: 20, role: simulation_engineer,        per_unit: true,  manual_review: false}
+  fea_basic:                 {default_hours: 32, role: simulation_engineer,        per_unit: true,  manual_review: true}
+  manufacturability_review:  {default_hours: 10, role: senior_mechanical_engineer, per_unit: false, manual_review: false}
+  on_site_support:           {default_hours: 8,  role: field_engineer,             per_unit: true,  manual_review: false}
+  extra_revision:            {default_hours: 8,  role: mechanical_engineer,        per_unit: true,  manual_review: false}
+
+part_count_factors:
+  "0_10":   {max_count: 10,  factor: 1.00, review: none}
+  "11_30":  {max_count: 30,  factor: 1.15, review: none}
+  "31_80":  {max_count: 80,  factor: 1.35, review: suggested}
+  "over_80": {max_count: null, factor: 1.60, review: required}
+
+assembly_complexity:
+  simple:    {factor: 1.00, review: none}
+  medium:    {factor: 1.15, review: none}
+  high:      {factor: 1.30, review: none}
+  very_high: {factor: 1.50, review: required}
+
+precision:
+  "unspecified":     {factor: 1.00, review: none}
+  "normal":          {factor: 1.00, review: none}
+  "0.10":            {factor: 1.15, review: none}
+  "0.05":            {factor: 1.30, review: required}
+  "0.01":            {factor: 1.50, review: required}
+  "high_precision":  {factor: 1.15, review: required, note: "未明确但客户表述高精度，必须向客户澄清"}
+
+professional_scope:
+  simple_motion:       {factor: 1.15, add_hours: 0,   role: null,            review: none}
+  multi_axis_cam:      {factor: 1.35, add_hours: 0,   role: null,            review: required}
+  pneumatic:           {factor: 1.00, add_hours: 16,  role: senior_mechanical_engineer, review: none}
+  hydraulic:           {factor: 1.00, add_hours: 32,  role: senior_mechanical_engineer, review: required}
+  safety_interlock:    {factor: 1.20, add_hours: 0,   role: null,            review: required}
+  special_environment: {factor: 1.35, add_hours: 0,   role: null,            review: required}
+  fea:                 {factor: 1.00, add_hours: 0,   role: null,            review: required}
+
+risk_factors:
+  completeness_tiers:
+    high:     {min_score: 0.90, factor: 1.00}
+    medium:   {min_score: 0.80, factor: 1.05}
+    low:      {min_score: 0.60, factor: 1.15}
+    very_low: {min_score: 0.00, factor: 1.30}
+  conditions:
+    missing_critical_interface:   {factor: 1.15, review: required}
+    missing_load_or_force:        {factor: 1.15, review: required}
+    unverified_solution:          {factor: 1.30, review: required}
+    multi_party_coordination:     {factor: 1.15, review: required}
+    new_customer:                 {factor: 1.10, review: none}
+    unlimited_revisions:          {factor: 1.15, review: required}
+    high_responsibility_industry: {factor: 1.20, review: required}
+
+rush_factors:
+  normal:          {min_ratio: 0.90, factor: 1.00, review: none}
+  slightly_urgent: {min_ratio: 0.70, factor: 1.10, review: none}
+  urgent:          {min_ratio: 0.40, factor: 1.25, review: required}
+  very_urgent:     {min_ratio: 0.00, factor: 1.60, review: required}
+
+manual_review:
+  quote_amount_above_cny: 50000
+  classification_confidence_below: 0.75
+  completeness_below: 0.80
+  factor_product_above: 2.00

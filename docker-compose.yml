@@ -1,0 +1,15 @@
+services:
+  quote-agent:
+    build: .
+    image: quote-agent:dev
+    env_file: .env
+    environment:
+      OLLAMA_HOST: host.docker.internal
+      OLLAMA_PORT: 11434
+      QDRANT_HOST: host.docker.internal
+      QDRANT_PORT: 6333
+    volumes:
+      - ./:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: ["python", "-m", "pytest", "-q"]
