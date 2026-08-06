@@ -20,6 +20,8 @@
 https://<你的腾讯云网站域名>/api/internal/agent
 ```
 
+> **落地变更（2026-08-05）**：服务端已并入网站后端 `backend-api`，实际 Base URL 为 `https://<你的腾讯云网站域名>/api/v1/internal/agent`；本地 `.env` 的 `CLOUD_API_BASE_URL` 按实际部署域名填写。
+
 > 域名尚未提供，不能虚构。部署时应写入本地 `.env` 的 `CLOUD_API_BASE_URL`。
 
 ### 1.2 请求头
