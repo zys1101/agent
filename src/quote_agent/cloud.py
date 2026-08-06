@@ -96,7 +96,13 @@ class CloudClient:
                 retryable=retryable,
                 status=resp.status_code,
             )
-        return resp.json()
+        try:
+            return resp.json()
+        except ValueError as exc:
+            raise CloudError(
+                f"cloud returned non-JSON response (status={resp.status_code}): {resp.text[:200]!r}",
+                status=resp.status_code,
+            ) from exc
 
     def claim(self, capabilities: list[str] | None = None) -> ClaimedTask | None:
         body = {
