@@ -1,9 +1,15 @@
 # 服务器后端开发文档（NestJS）：报价 Agent 接口
 
 - **文档编号**：BE-DEV-001
-- **版本**：0.1.0-draft
+- **版本**：0.1.1-draft
 - **技术栈**：NestJS + TypeScript + MySQL/PostgreSQL + 腾讯云 COS
 - **关联文档**：[API 契约](06-api-contract.md)、[Agent 工作流](05-agent-workflow.md)、[报价规则规范](04-quote-rule-specification.md)、[测试验收](08-test-and-evaluation-plan.md)
+
+> **落地方式变更（2026-08-05，v0.1.1）**：报价 Agent 服务端已并入网站后端 `backend-api`（`E:\Appdata\Web`，NestJS + Prisma + MySQL，全局前缀 `/api/v1`）。
+> - Agent 接口实际路径为 `/api/v1/internal/agent/tasks/*`（Worker 的 `CLOUD_API_BASE_URL` 设为 `https://<域名>/api/v1/internal/agent`）；
+> - 代码位置：`backend-api/src/modules/quote-agent/`（数据模型见 `backend-api/prisma/schema.prisma`：`quote_project`、`quote_task`、`quote`、`agent_credential`、`agent_audit_log`）；
+> - 网站侧提交/查询接口：`POST /api/v1/quote-agent/requests`、`GET /api/v1/quote-agent/requests/:taskId`（供 `frontend-client/src/views/AiQuote.vue` 后续接入）；
+> - 本文后续章节中的独立 NestJS 工程、TypeORM、PostgreSQL、`server/` 目录均为原始方案，保留作参考，不再适用。
 
 > **特别注意 1：本后端是报价架构中的"云端"。** 本地 Worker 只会主动出站请求本服务；本服务**永远不反向连接本地工作站**，不需要 FRP。
 >
@@ -32,6 +38,7 @@
 - 正式报价单 PDF、通知推送；
 - 客服 Agent（本文档仅预留接口位置）；
 - CAD 解析、云端模型推理、自动支付/ERP。
+- `GET /rules/active` 规则下发接口（06 契约中的可选接口，MVP 规则仅本地维护，不实现）；
 
 ---
 
@@ -52,11 +59,11 @@
 
 | 组件 | 建议 | 说明 |
 |---|---|---|
-| 框架 | NestJS 10+ | 模块化、自带 Guards/Interceptors |
+| 框架 | NestJS 10+ | 沿用 `backend-api` 既有框架 |
 | 语言 | TypeScript 5.x | strict 模式 |
-| ORM | TypeORM 或 Prisma | 本文以 TypeORM 为例，字段兼容两者 |
-| 数据库 | PostgreSQL 15+ 或 MySQL 8 | 需要 `FOR UPDATE SKIP LOCKED` 或等价原子更新 |
-| COS SDK | `cos-nodejs-sdk-v5` | 私有桶签名、STS 临时密钥 |
+| ORM | Prisma | 沿用 `backend-api` 既有 Prisma + MySQL |
+| 数据库 | MySQL 8 | `quote-agent` 模块新增 5 张表 |
+| COS SDK | 预留 | MVP 附件走本站 `/uploads` 静态服务，URL 由 `AGENT_FILE_BASE_URL` 拼接 |
 | 密码学 | `bcryptjs` | Token 只存哈希 |
 | 校验 | `class-validator` + `class-transformer` | DTO 校验 |
 | 日志 | NestJS Logger + `pino`（可选） | 脱敏后落盘 |
@@ -67,37 +74,20 @@
 ## 4. 目录结构建议
 
 ```text
-src/
-  main.ts                        # 全局前缀、ValidationPipe、异常过滤器
-  app.module.ts
-  common/
-    decorators/                  # @AgentAuth() 等
-    guards/agent-auth.guard.ts   # Bearer Token 校验
-    filters/http-exception.filter.ts  # 统一错误格式
-  modules/
-    agents/                      # Agent 凭证与鉴权
-      agent.entity.ts
-      agent-token.service.ts
-    projects/                    # 客户项目
-      project.entity.ts
-      project-file.entity.ts
-    tasks/                       # 任务、租约、心跳、幂等、重试
-      task.entity.ts
-      tasks.service.ts
-    quotes/                      # 报价版本与审核
-      quote.entity.ts
-      quote-version.service.ts
-      quote-review.service.ts    # 强制审核二次校验
-    cos/                         # 私有桶、签名 URL、STS
-      cos.service.ts
-      cos-upload.controller.ts   # 客户上传（STS 直传）
-    audit/                       # 审计日志
-      audit-log.entity.ts
-      audit.service.ts
-    agent-api/                   # 06 契约控制器（仅内部路径）
-      agent.controller.ts
-      agent.dto.ts
-      result.schema.ts           # complete 结果 JSON Schema
+backend-api/src/modules/quote-agent/
+  agent-auth.guard.ts            # Bearer Token + X-Agent-Id 校验（bcrypt 哈希比对）
+  agent-exception.filter.ts      # Agent 接口统一错误格式 { error: { code, message, request_id } }
+  agent.dto.ts                   # claim / heartbeat / complete / fail / 网站申请 DTO
+  result.schema.ts               # complete 结果 JSON Schema（ajv）
+  quote-review.service.ts        # 服务端强制审核二次校验（QRS §12.1）
+  file-url.service.ts            # 附件下载 URL（MVP 走 /uploads，COS 预留）
+  quote-agent.service.ts         # claim / heartbeat / complete / fail + 租约 + 幂等 + 退避
+  quote-agent.controller.ts      # /api/v1/internal/agent/tasks/*
+  quote-agent.customer.controller.ts  # /api/v1/quote-agent/requests*
+  quote-agent.module.ts
+backend-api/prisma/schema.prisma # 新增 quote_project / quote_project_file / quote_task / quote / agent_credential / agent_audit_log
+backend-api/scripts/seed-agent.ts    # 初始化 Agent 凭证
+backend-api/scripts/seed-demo.ts     # 创建演示任务（本地联调）
 ```
 
 ---
@@ -117,6 +107,8 @@ src/
 | status | varchar(32) | `draft / submitted / processing / pending_review / quoted / rejected` |
 | customer_id | varchar(32) | 客户（本期可空，先留字段） |
 | created_at / updated_at | datetime | |
+
+> 状态流转：客户提交后 `submitted` →（Worker claim）`processing` →（complete）`pending_review` / `quoted`；人工驳回 → `rejected`。
 
 ### 5.2 `project_files`（附件元数据，文件本体在 COS）
 
@@ -139,9 +131,10 @@ src/
 |---|---|---|
 | id | varchar(32) | `qt_` 前缀 |
 | project_id | varchar(32) | 外键 |
-| status | varchar(32) | `queued / claimed / completed / failed / retryable_failed` |
+| status | varchar(32) | `queued / claimed / completed / failed / retryable_failed`（`retryable_failed` = 重试耗尽后的终态） |
 | lease_token | varchar(64) | 领取时生成，哈希存储 |
 | lease_expires_at | datetime | 默认领取后 30 分钟 |
+| next_retry_at | datetime | 可空；retryable 失败后的退避重试时间点，未到该时间不可被重新领取 |
 | agent_id | varchar(64) | 处理 Agent |
 | attempts | int | 重试次数，上限 3 |
 | quote_id | varchar(32) | 完成后的报价外键 |
@@ -151,6 +144,8 @@ src/
 | created_at / updated_at | datetime | |
 
 唯一约束：`UNIQUE (idempotency_key)`。
+
+> claim 候选条件必须包含 `next_retry_at <= now()`（或 `next_retry_at IS NULL`），否则退避排期形同虚设。
 
 ### 5.4 `quotes`（报价版本）
 
@@ -163,11 +158,12 @@ src/
 | currency | varchar(8) | CNY |
 | price_min / price_rec / price_max | decimal(12,2) | 可空（预研报价为空） |
 | estimated_hours_total | decimal(8,1) | |
-| completeness_score | decimal(4,4) | |
+| completeness_score | decimal(5,4) | 完整度可到 1.0，`decimal(4,4)` 会溢出 |
+| classification_confidence | decimal(4,4) | 可空；Worker 回传的分类置信度（服务端二次校验参考） |
 | manual_review_required | boolean | 服务端二次校验结果 |
 | review_reasons | json | 审核原因数组 |
 | snapshot | json | 规则版本、输入、计算明细（不可变） |
-| status | varchar(32) | `pending_review / approved / rejected / sent` |
+| status | varchar(32) | `pending_review`（需人工）/ `approved`（服务端判定自动通过）/ `rejected` / `sent` |
 | approved_by / approved_at | varchar(32) / datetime | 人工批准信息 |
 | created_at | datetime | |
 
@@ -231,13 +227,14 @@ src/
 
 1. 校验 Token 与 `X-Agent-Id` 匹配、Agent 已启用；
 2. 在事务中取一个可处理任务：
-   - `status = queued`，或
+   - `status = queued`，且（`next_retry_at` 为空或 `next_retry_at <= now()`），或
    - `status = claimed` 且 `lease_expires_at < now()`（租约过期重新投递）；
    - 跳过 `attempts >= 3` 的失败任务；
    - 跳过文件总大小超过 Agent `max_file_size_mb` 的任务；
 3. 置 `status = claimed`，生成 `lease_token`（随机 64 位，存哈希），`lease_expires_at = now + 30min`；
-4. 为每个附件生成 **15 分钟有效** 的 COS 私有签名 URL；
-5. 无任务返回 `204 No Content`。
+4. 将对应 `project.status` 置为 `processing`；
+5. 为每个附件生成 **15 分钟有效** 的 COS 私有签名 URL；
+6. 无任务返回 `204 No Content`。
 
 > PostgreSQL 建议 `SELECT ... FOR UPDATE SKIP LOCKED`；MySQL 用 `UPDATE ... WHERE status='queued' AND id IN (SELECT ...) LIMIT 1` 保证原子性。
 
@@ -257,7 +254,7 @@ src/
 3. 校验 `result` 通过 JSON Schema（见 6.6）；
 4. 落库报价版本：计算快照、工时、价格区间、审核原因；
 5. **服务端强制审核二次校验**（见第 7 节），得出 `manual_review_required`，不信任客户端值；
-6. 任务置 `completed`，`project.status = pending_review / quoted`；
+6. 任务置 `completed`，`project.status = pending_review / quoted`，`quote.status = pending_review`（需人工）/ `approved`（自动通过）；
 7. 返回 `quote_id` 与 `project_status`。
 
 响应示例：
@@ -283,7 +280,7 @@ src/
 }
 ```
 
-- `retryable = true`：`attempts + 1`，置回 `queued` 并按指数退避排期重试（30s / 120s / 300s，上限 3 次）；
+- `retryable = true`：`attempts + 1`；若 `attempts < 3`，置回 `queued` 并写入 `next_retry_at = now + 退避时间`（30s / 120s / 300s，按第几次失败选择），未到时间不可被 claim 重新领取；若 `attempts >= 3`，置 `retryable_failed`（终态，需人工介入）；
 - `retryable = false`：置 `failed`，通知内部人员；
 - `message` 只允许脱敏后的内容（服务端可再做一次敏感词/Token 清洗），不得原样展示给客户。
 
@@ -341,6 +338,7 @@ src/
 报价落库时，服务端必须按当前规则版本重算以下条件（与 QRS §12.1 对齐）：
 
 - 需求完整度 < 0.80；
+- 分类置信度低于 `0.75`（`classification_confidence`）；
 - 报价建议金额 ≥ ¥50,000（有价格区间时）；
 - 交期比例 < 0.70（`deadline_workdays / 标准周期`，标准周期由 `rule_set_version` 对应规则计算或取 Worker 回传的 `estimated_standard_cycle_days`）；
 - 精度要求 ≤ ±0.05mm；
@@ -352,6 +350,8 @@ src/
 任一命中 → `manual_review_required = true`、`quote.status = pending_review`、写 `audit_logs`。人工在后台批准后才允许转 `formal_quote` 发送客户。
 
 > 规则版本号随 `calculation_snapshot` 保存；服务端二次校验的规则集与 Worker 规则集必须来自同一版本（建议服务端持有 `rule_set_version -> 阈值` 配置）。
+>
+> 所有阈值（金额、完整度、交期比例、精度、置信度、系数乘积、强制审核类型集合）均由服务端环境变量配置，不写死在代码中；服务端从 complete 结果顶层字段与 `calculation_snapshot` 结构化字段取值校验，字段缺失时按 `missing_information` / 关键字兜底，仍无法判定则按「需审核」处理（宁多勿漏）。
 
 ---
 
@@ -413,7 +413,20 @@ COS_PUBLIC_BASE_URL=https://<你的域名>/files   # 代理下载入口（可选
 RULE_SET_VERSION=0.1.0-draft
 REVIEW_AMOUNT_THRESHOLD_CNY=50000
 REVIEW_COMPLETENESS_BELOW=0.80
-REVIEW_RUSH_RATIO_BELOW=0.70
+REVIEW_DEADLINE_RATIO_BELOW=0.70      # 旧名 REVIEW_RUSH_RATIO_BELOW 兼容
+REVIEW_CLASSIFICATION_CONFIDENCE_BELOW=0.75
+REVIEW_PRECISION_MAX_MM=0.05
+REVIEW_FACTOR_PRODUCT_ABOVE=2.00
+REVIEW_MANDATORY_PROJECT_TYPES=welding_fixture,pneumatic_press_fixture,loading_module,single_station_machine
+
+# 任务租约与重试
+LEASE_MINUTES=30
+LEASE_RENEW_BELOW_MINUTES=10
+MAX_RETRY_ATTEMPTS=3
+RETRY_BACKOFF_SECONDS=30,120,300
+
+# 本地联调（未配置 COS 时使用；生产必须配 COS）
+LOCAL_FILE_BASE_URL=http://localhost:3000/files
 
 # Agent 接入
 AGENT_TOKEN_PLAIN=init-only   # 首次初始化后只存哈希
@@ -483,4 +496,5 @@ docker compose up -d --build          # 推荐 Docker Compose 运行 NestJS + DB
 
 | 版本 | 日期 | 修改说明 | 审批人 |
 |---|---|---|---|
+| `0.1.1-draft` | 2026-08-05 | 修正：二次校验补分类置信度、退避排期 `next_retry_at`、`decimal(5,4)`、`retryable_failed` 终态语义、claim 推进项目状态、阈值配置化 | 待指定 |
 | `0.1.0-draft` | 2026-08-05 | 创建 NestJS 后端开发文档（报价 Agent 接口） | 待指定 |
