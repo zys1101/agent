@@ -78,6 +78,12 @@ class QuoteEngine:
         pt = rules.project_types.get(project_type)
         if pt is None:
             raise ValueError(f"unknown project_type: {project_type}")
+        category = (
+            classification.category
+            if classification is not None and classification.category in rules.case_categories
+            else rules.category_of(project_type)
+        )
+        category_name = rules.category_name_of(category)
 
         # ---- 1. 基础工时 ----
         base_hours = pt.base_hours
@@ -265,6 +271,8 @@ class QuoteEngine:
             quote_type=quote_type,
             currency=rules.currency,
             project_type=project_type,
+            category=category,
+            category_name=category_name,
             estimated_hours=estimated_hours,
             hours_by_role={role: _round2(h) for role, h in sorted(role_hours.items())},
             estimated_standard_cycle_days=_round2(cycle_days),

@@ -44,6 +44,7 @@ def test_upsert_and_search(store: RagStore):
             CaseRecord(
                 case_id="c1",
                 project_type="pneumatic_press_fixture",
+                category="tooling_fixture",
                 summary="电机壳体轴承压装工装，气动夹具",
                 deliverables=["three_d_assembly", "bom"],
                 risk_notes=["压装力需确认"],
@@ -53,6 +54,7 @@ def test_upsert_and_search(store: RagStore):
             CaseRecord(
                 case_id="c2",
                 project_type="sheet_metal_part",
+                category="sheet_metal_cabinet",
                 summary="机柜钣金件，折弯件罩壳",
                 deliverables=["three_d_model", "two_d_part_drawing"],
                 typical_hours=12,
@@ -68,3 +70,22 @@ def test_upsert_and_search(store: RagStore):
 def test_search_filter_by_project_type(store: RagStore):
     hits = store.search("压装工装", project_type="sheet_metal_part", top_k=3)
     assert all(case.project_type == "sheet_metal_part" for case, _ in hits)
+
+
+def test_search_filter_by_category(store: RagStore):
+    hits = store.search("压装工装", category="tooling_fixture", top_k=3)
+    assert hits
+    assert all(case.category == "tooling_fixture" for case, _ in hits)
+
+
+def test_search_project_type_or_category(store: RagStore):
+    # project_type 与 category 同时给定：任一匹配即命中（官网案例可能只按大类入库）
+    hits = store.search(
+        "压装工装",
+        project_type="pneumatic_press_fixture",
+        category="sheet_metal_cabinet",
+        top_k=5,
+    )
+    assert hits
+    assert any(case.project_type == "pneumatic_press_fixture" for case, _ in hits)
+    assert any(case.category == "sheet_metal_cabinet" for case, _ in hits)

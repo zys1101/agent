@@ -3,9 +3,26 @@
 # 说明：所有工时/费率/系数均为示例占位值，上线前必须由业务负责人确认（QRS 第 18 节）。
 # 任何修改都必须升级 rule_set_version 并走 QRS 第 16.1 节变更流程。
 
-rule_set_version: "0.1.0-draft"
+rule_set_version: "0.2.0-draft"
 currency: "CNY"
 quote_type_default: "budget_range"
+
+# 业务大类（对齐官网案例/设计类型分类：https://www.sonsentech.cn/cases）
+# key 为代码内稳定标识；id 与官网案例页分类一致；name 为对外展示名称。
+case_categories:
+  machine_design:          {id: 1,  name: 整机设备设计,   description: 面向自动化产线、专用设备与整机产品，提供从方案构思、结构布局到详细设计的完整整机设计服务。}
+  mechanism_design:        {id: 2,  name: 机械机构设计,   description: 聚焦传动、连杆、凸轮等核心机构的设计与优化，结合运动学与动力学分析，实现精准运动传递与可靠机械性能。}
+  product_structure:       {id: 3,  name: 产品结构设计,   description: 针对产品内部堆叠、装配关系与强度要求进行结构设计，确保满足功能需求、可靠性指标及可制造性要求。}
+  sheet_metal_cabinet:     {id: 4,  name: 钣金机柜设计,   description: 提供各类钣金机柜、控制箱、操作台的设计方案，涵盖折弯、焊接、表面处理等工艺细节。}
+  welding_frame:           {id: 5,  name: 焊接机架设计,   description: 设计各类焊接机架、底座与支撑结构，进行焊接工艺规划与变形控制分析。}
+  tooling_fixture:         {id: 6,  name: 工装夹具设计,   description: 为加工、装配、检测等环节设计专用工装夹具，提升生产效率与产品一致性。}
+  test_fixture:            {id: 7,  name: 测试治具设计,   description: 针对产品功能测试、可靠性测试需求，设计专用测试治具与检测设备。}
+  drawing_modeling:        {id: 8,  name: 工程制图与建模, description: 提供专业的三维建模与二维工程图绘制服务，严格遵循国标与企业标准。}
+  reverse_engineering:     {id: 9,  name: 产品改造与逆向, description: 基于三维扫描与测量数据，对现有产品进行逆向建模与改造升级。}
+  simulation_analysis:     {id: 10, name: 仿真分析,       description: 运用有限元分析（FEA）等仿真手段，对结构强度、运动特性、热流体等进行仿真验证。}
+  process_production:      {id: 11, name: 工艺与生产方案, description: 面向装配、检测、包装等场景提供工艺规划与生产方案设计，包含产线布局与节拍分析。}
+  drawing_standardization: {id: 12, name: 图纸整理与标准化, description: 对已有图纸进行整理、规范化与标准化，输出符合国标和企业标准的图文档。}
+  technical_consulting:    {id: 13, name: 技术咨询,       description: 设计评审、技术答疑、方案论证等咨询服务。}
 
 operating_assumptions:
   effective_engineering_hours_per_day: 6
@@ -42,17 +59,17 @@ price_range_by_completeness:
     max_factor: 1.20
 
 project_types:
-  simple_part:             {base_hours: 8,   base_cycle_days: 2,  default_role: junior_mechanical_engineer, manual_review: false}
-  machined_part:           {base_hours: 16,  base_cycle_days: 3,  default_role: mechanical_engineer,        manual_review: false}
-  sheet_metal_part:        {base_hours: 12,  base_cycle_days: 3,  default_role: mechanical_engineer,        manual_review: false}
-  drawing_conversion:      {base_hours: 2,   base_cycle_days: 1,  default_role: drafter,                    manual_review: false}
-  inspection_fixture:      {base_hours: 24,  base_cycle_days: 5,  default_role: mechanical_engineer,        manual_review: false}
-  assembly_fixture:        {base_hours: 36,  base_cycle_days: 7,  default_role: mechanical_engineer,        manual_review: false}
-  welding_fixture:         {base_hours: 48,  base_cycle_days: 10, default_role: senior_mechanical_engineer, manual_review: true}
-  pneumatic_press_fixture: {base_hours: 72,  base_cycle_days: 12, default_role: senior_mechanical_engineer, manual_review: true}
-  loading_module:          {base_hours: 80,  base_cycle_days: 15, default_role: senior_mechanical_engineer, manual_review: true}
-  single_station_machine:  {base_hours: 120, base_cycle_days: 20, default_role: technical_lead,            manual_review: true}
-  design_review:           {base_hours: 12,  base_cycle_days: 3,  default_role: senior_mechanical_engineer, manual_review: false}
+  simple_part:             {base_hours: 8,   base_cycle_days: 2,  default_role: junior_mechanical_engineer, manual_review: false, category: product_structure}
+  machined_part:           {base_hours: 16,  base_cycle_days: 3,  default_role: mechanical_engineer,        manual_review: false, category: product_structure}
+  sheet_metal_part:        {base_hours: 12,  base_cycle_days: 3,  default_role: mechanical_engineer,        manual_review: false, category: sheet_metal_cabinet}
+  drawing_conversion:      {base_hours: 2,   base_cycle_days: 1,  default_role: drafter,                    manual_review: false, category: drawing_modeling}
+  inspection_fixture:      {base_hours: 24,  base_cycle_days: 5,  default_role: mechanical_engineer,        manual_review: false, category: tooling_fixture}
+  assembly_fixture:        {base_hours: 36,  base_cycle_days: 7,  default_role: mechanical_engineer,        manual_review: false, category: tooling_fixture}
+  welding_fixture:         {base_hours: 48,  base_cycle_days: 10, default_role: senior_mechanical_engineer, manual_review: true,  category: tooling_fixture}
+  pneumatic_press_fixture: {base_hours: 72,  base_cycle_days: 12, default_role: senior_mechanical_engineer, manual_review: true,  category: tooling_fixture}
+  loading_module:          {base_hours: 80,  base_cycle_days: 15, default_role: senior_mechanical_engineer, manual_review: true,  category: machine_design}
+  single_station_machine:  {base_hours: 120, base_cycle_days: 20, default_role: technical_lead,            manual_review: true,  category: machine_design}
+  design_review:           {base_hours: 12,  base_cycle_days: 3,  default_role: senior_mechanical_engineer, manual_review: false, category: technical_consulting}
 
 # 需求完整度模板：QRS 9.1/9.2
 # field state: confirmed=100% 权重, inferred=50%, unknown=0%, not_applicable 不计入分母

@@ -17,9 +17,11 @@ def main() -> int:
     records = []
     for path in sorted(cases_dir.glob("*.json")):
         data = json.loads(path.read_text(encoding="utf-8"))
-        if "price_range_cny" in data and isinstance(data["price_range_cny"], list):
-            data["price_range_cny"] = tuple(data["price_range_cny"])
-        records.append(CaseRecord.model_validate(data))
+        entries = data if isinstance(data, list) else [data]
+        for entry in entries:
+            if "price_range_cny" in entry and isinstance(entry["price_range_cny"], list):
+                entry["price_range_cny"] = tuple(entry["price_range_cny"])
+            records.append(CaseRecord.model_validate(entry))
 
     llm = OllamaClient.from_env()
     store = RagStore.from_env(embed_fn=llm.embed)

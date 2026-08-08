@@ -184,7 +184,12 @@ class Worker:
             return []
         try:
             query = f"{requirement.function_description or ''} {requirement.project_type_candidate}".strip()
-            cases = self.rag.search(query, project_type=classification.project_type, top_k=3)
+            cases = self.rag.search(
+                query,
+                project_type=classification.project_type,
+                category=classification.category,
+                top_k=3,
+            )
             self.cache.audit(task_id, "retrieved_cases", f"RAG hit {len(cases)} cases")
             return cases
         except Exception as exc:
@@ -225,6 +230,7 @@ def build_result(
             {
                 "case_id": case.case_id,
                 "project_type": case.project_type,
+                "category": case.category,
                 "summary": case.summary,
                 "score": round(score, 3),
             }
@@ -240,6 +246,8 @@ def build_result(
         },
         "result": {
             "project_type": calc.project_type,
+            "category": calc.category,
+            "category_name": calc.category_name,
             "completeness_score": requirement.completeness_score,
             "classification_confidence": classification.confidence,
             "estimated_hours": {"total": calc.estimated_hours.total},

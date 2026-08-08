@@ -1,0 +1,843 @@
+[
+  {
+    "case_id": "sonsen_001",
+    "project_type": "single_station_machine",
+    "category": "machine_design",
+    "summary": "整形机折弯机3D数模图纸 Solidworks设计。标签：钣金成型、整机集成、伺服控制。为某金属加工客户设计高精度整形机与折弯机设备，涵盖机身机架、折弯执行机构、整形定位模组及伺服传动系统的整机方案设计。基于Solidworks完成三维建模与工程出图，从方案构思到加工装配全程参与，设备满足复杂钣金件的成型与折弯精度要求。",
+    "deliverables": [
+      "整机三维模型",
+      "全套零件图与装配图",
+      "BOM清单",
+      "气路/电路图"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_002",
+    "project_type": "single_station_machine",
+    "category": "machine_design",
+    "summary": "螺丝自动整列机设备3D数模图纸 Solidworks设计。标签：螺丝整列、振动送料、自动化上料。为电子组装客户设计螺丝自动整列机，通过振动盘送料与视觉定位系统，实现螺丝的自动排列、定向与分料输出。整机采用Solidworks完成三维建模与工程出图，结构紧凑，适用于M2~M8多规格螺丝的高速整列作业。",
+    "deliverables": [
+      "整机三维数模",
+      "零件工程图",
+      "装配图",
+      "BOM明细表",
+      "振动盘选型说明"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_003",
+    "project_type": "mechanism_design",
+    "category": "mechanism_design",
+    "summary": "【精巧机构】缸锁图纸 创意机械机构设计 step格式。标签：锁止机构、联动设计、精巧机构。完成一种基于气缸驱动的机械锁止机构设计，通过巧妙的连杆与凸轮组合实现锁舌的伸缩动作。机构结构紧凑、动作可靠，适用于自动化设备中的工件夹紧与工位锁定场景。提供STEP通用格式，方便客户在任意CAD软件中查看与修改。",
+    "deliverables": [
+      "机构三维模型（STEP格式）",
+      "运动简图",
+      "关键零件图",
+      "装配说明"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_004",
+    "project_type": "mechanism_design",
+    "category": "mechanism_design",
+    "summary": "往返摆动机构。标签：摆动机构、往复运动、连杆传动。设计一种将旋转运动转换为往复摆动的机械机构，采用曲柄摇杆与齿轮组合方案，实现精确的摆动角度与频率控制。机构运行平稳、噪声低，适用于输送线换向、包装设备摆臂等工况，已完成运动学仿真验证。",
+    "deliverables": [
+      "机构三维模型",
+      "运动学分析报告",
+      "零件图纸",
+      "装配工艺卡"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_005",
+    "project_type": "mechanism_design",
+    "category": "mechanism_design",
+    "summary": "数控机床机构3D图纸。标签：数控机床、进给机构、精密传动。为数控机床客户完成进给机构与主轴箱的三维建模与工程图纸输出。涵盖滚珠丝杠进给单元、主轴轴承配置、刀库换刀机构等核心模块的设计。传动精度与刚性满足精密加工要求，所有关键配合尺寸均已标注公差。",
+    "deliverables": [
+      "机床整机三维模型",
+      "进给机构详图",
+      "主轴箱装配图",
+      "关键零件图与公差标注"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_006",
+    "project_type": "product_structure",
+    "category": "product_structure",
+    "summary": "产品自动找位结构3D模型图纸。标签：自动定位、传感器集成、精密对位。设计产品自动找位对正结构，集成光电传感器与气动推杆，实现工件在输送线上的自动纠偏与精准定位。定位精度±0.1mm，节拍满足产线高速运行要求。结构模块化设计，便于后期维护与规格切换。",
+    "deliverables": [
+      "结构三维模型",
+      "传感器布局图",
+      "零件图纸",
+      "气路原理图"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_007",
+    "project_type": "product_structure",
+    "category": "product_structure",
+    "summary": "断路器结构3D模型 UG(NX)设计。标签：断路器、电气产品结构、UG建模。使用UG(NX)完成低压断路器的完整结构设计，包含触头系统、灭弧室、操作机构与外壳装配。重点解决触头压力弹簧预紧、灭弧栅片间距控制与脱扣联动等关键技术问题。输出全套三维模型与可制造工程图纸。",
+    "deliverables": [
+      "断路器三维总装模型",
+      "零件图（含公差）",
+      "装配爆炸图",
+      "触头压力计算书"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_008",
+    "project_type": "product_structure",
+    "category": "product_structure",
+    "summary": "工业食品输送机结构3D图纸 CATIA设计。标签：食品输送机、卫生级设计、CATIA建模。使用CATIA为食品加工客户设计卫生级皮带输送机，整机采用SUS304不锈钢材质，满足食品级卫生标准。结构设计注重无死角、易清洗与快速拆装，输送带张紧与纠偏机构集成于框架内部，外观简洁且操作安全。",
+    "deliverables": [
+      "输送机三维模型",
+      "食品级材料证明清单",
+      "焊接详图",
+      "装配指导书"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_009",
+    "project_type": "product_structure",
+    "category": "product_structure",
+    "summary": "肥皂厂设计机械密封结构3D图纸 Solidworks设计。标签：机械密封、防腐蚀设计、搅拌设备。为日化产线客户设计肥皂搅拌设备的机械密封结构，解决高碱度、高粘度介质下的轴封泄漏问题。采用双端面机械密封配合冲洗方案，密封寿命较原方案提升3倍以上。整体结构使用Solidworks完成建模与干涉检查。",
+    "deliverables": [
+      "密封结构三维模型",
+      "密封选型计算书",
+      "零件图",
+      "装配与调试说明"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_010",
+    "project_type": "sheet_metal_part",
+    "category": "sheet_metal_cabinet",
+    "summary": "综合机柜机架组件钣金3D模型图纸 Solidworks设计。标签：机柜组件、钣金展开、模块化设计。为数据中心客户设计标准19英寸综合机柜及其内部组件，涵盖顶盖、侧板、立柱、托盘等全部钣金件的展开与成型设计。采用模块化拼接结构，支持不同高度与深度的灵活组合。所有钣金件均已进行展开计算与折弯工艺标注。",
+    "deliverables": [
+      "机柜总装三维模型",
+      "各组件钣金展开图",
+      "折弯工艺卡",
+      "紧固件清单"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_011",
+    "project_type": "sheet_metal_part",
+    "category": "sheet_metal_cabinet",
+    "summary": "综合配电柜钣金机构3D图纸 Solidworks设计。标签：配电柜、母线排布、防护等级。完成低压综合配电柜的钣金结构设计，柜体满足IP54防护等级要求。合理规划母线排布空间、进出线孔位与散热通风方案，内部安装梁与安装板可调节，适配不同规格断路器与电气元器件的安装需求。",
+    "deliverables": [
+      "配电柜三维模型",
+      "钣金展开图",
+      "母线排布图",
+      "元器件安装布局图"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_012",
+    "project_type": "sheet_metal_part",
+    "category": "sheet_metal_cabinet",
+    "summary": "电气柜钣金结构3D图纸 Solidworks设计。标签：电气控制柜、EMC防护、线缆管理。为自动化设备配套设计电气控制柜钣金结构，柜内合理划分强电区、弱电区与信号区，通过隔板与屏蔽措施满足EMC要求。线缆进出采用专用线槽与葛兰头密封，兼顾防护等级与维护便捷性。",
+    "deliverables": [
+      "电气柜三维模型",
+      "钣金展开图",
+      "线槽布局图",
+      "EMC分区说明"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_013",
+    "project_type": "sheet_metal_part",
+    "category": "sheet_metal_cabinet",
+    "summary": "非标机箱机柜电柜3D数模图纸 Solidworks设计。标签：非标机柜、定制设计、多品种适配。根据客户设备安装空间与功能需求，定制设计非标尺寸机箱机柜。涵盖控制柜、操作台、接线箱等多种柜型，统一设计语言与制造工艺标准。所有柜体均完成三维建模、钣金展开与力学校核，满足批量生产要求。",
+    "deliverables": [
+      "全系列机柜三维模型",
+      "钣金展开图",
+      "门锁/铰链选型表",
+      "生产工艺文件"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_014",
+    "project_type": "welding_frame",
+    "category": "welding_frame",
+    "summary": "汽车部件焊接架3D图纸 Solidworks设计。标签：汽车焊接、承载机架、焊接工艺。为汽车零部件产线设计专用焊接机架，承载工件重量达500kg以上。通过合理布置加强筋板与焊缝位置，控制焊接变形在允许范围内。机架底座配有调平机构，确保焊接工位精度。已完成焊接工艺评定与变形预测分析。",
+    "deliverables": [
+      "焊接机架三维模型",
+      "焊接工艺卡（WPS）",
+      "焊缝详图",
+      "变形控制方案"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_015",
+    "project_type": "welding_frame",
+    "category": "welding_frame",
+    "summary": "印刷电路板（PCB）焊接固定架3D图纸 Solidworks设计 附STEP。标签：PCB焊接、精密固定、防静电设计。为SMT产线设计PCB焊接固定架，采用防静电材料结合弹性夹持结构，确保PCB在回流焊与波峰焊过程中的稳定定位。架子支持多尺寸PCB兼容，快换卡槽设计便于不同产品切换。提供STEP格式方便客户验证适配性。",
+    "deliverables": [
+      "固定架三维模型（含STEP）",
+      "夹持结构详图",
+      "零件图",
+      "材料说明（防静电等级）"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_016",
+    "project_type": "welding_frame",
+    "category": "welding_frame",
+    "summary": "汽车挂斗支架焊接专机3D数模图纸 Solidworks设计。标签：焊接专机、汽车挂斗、多工位设计。为汽车挂斗支架生产设计专用焊接设备，集成多工位旋转与气动夹持功能。设备可实现支架多面焊缝的一次装夹焊接，大幅减少翻身次数与装夹误差。整机结构与运动系统均完成三维建模与干涉验证。",
+    "deliverables": [
+      "焊接专机三维模型",
+      "运动机构图纸",
+      "气路原理图",
+      "操作指导书"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_017",
+    "project_type": "welding_frame",
+    "category": "welding_frame",
+    "summary": "龙门架焊接机器人总成数模 SOLIDWORKS设计。标签：龙门焊接、机器人集成、大型结构。完成龙门式焊接机器人总成的三维建模，涵盖龙门框架、行走机构、焊枪姿态调节机构与线缆拖链系统。龙门跨度达6米，采用双面驱动同步控制。整机数模包含所有外购件与自制件，可直接用于加工与装配。",
+    "deliverables": [
+      "龙门总成三维模型",
+      "框架焊接详图",
+      "行走机构图纸",
+      "线缆拖链排布图"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_018",
+    "project_type": "welding_frame",
+    "category": "welding_frame",
+    "summary": "钣金组焊设备 上下框架组焊治具3D模型图纸 Solidworks设计 附STP。标签：组焊治具、框架焊接、定位夹紧。为钣金框架的组对焊接设计专用治具，上框架与下框架分别配置独立定位基准面与快速夹钳。治具保证框架对角线偏差≤0.5mm，焊接后整体尺寸精度满足后续装配要求。提供STP通用格式，便于客户二次修改。",
+    "deliverables": [
+      "组焊治具三维模型（附STP）",
+      "定位基准标注图",
+      "零件图",
+      "使用与调试说明"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_019",
+    "project_type": "welding_frame",
+    "category": "welding_frame",
+    "summary": "裁切焊接机构3D模型图纸 CREO设计。标签：裁切焊接、一体化机构、CREO建模。使用CREO设计裁切与焊接一体化工作机构，将板材裁切、折边与点焊三道工序集成于同一工位。通过气缸驱动裁切刀具与焊接电极的顺序动作，实现工序衔接与节拍优化。机构紧凑，适用于薄板件的小型化生产。",
+    "deliverables": [
+      "裁切焊接机构三维模型",
+      "气路时序图",
+      "零件图",
+      "动作流程说明"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_020",
+    "project_type": "welding_frame",
+    "category": "welding_frame",
+    "summary": "下框架焊接治具3D数模图纸 x_t格式。标签：焊接治具、框架定位、通用兼容。为多品种框架产品设计通用焊接治具，通过可更换定位块与adjustable支撑实现不同规格框架的适配。治具底板经精密加工，平面度≤0.1mm。提供x_t通用格式，方便客户根据实际产品调整定位尺寸。",
+    "deliverables": [
+      "焊接治具三维模型（x_t格式）",
+      "定位块零件图",
+      "底板加工图",
+      "适配规格清单"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_021",
+    "project_type": "welding_frame",
+    "category": "welding_frame",
+    "summary": "焊接通用机3D数模图纸 Solidworks设计。标签：通用焊接机、多功能、标准化设计。设计一款通用型焊接设备，集MIG/MAG/TIG多种焊接方式于一体。设备机架采用模块化设计，焊接电源、送丝机构与焊枪夹持单元可灵活组合。适用于多品种、小批量的焊接加工场景，大幅降低设备投入成本。",
+    "deliverables": [
+      "通用焊机三维模型",
+      "机架焊接详图",
+      "电气原理图",
+      "使用维护手册"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_022",
+    "project_type": "assembly_fixture",
+    "category": "tooling_fixture",
+    "summary": "钣金柔性焊接工装夹具3D模型 Catia设计。标签：柔性夹具、焊接工装、多品种适配。使用Catia为钣金焊接产线设计柔性工装夹具系统，通过可重构定位模块与快换夹钳，实现同一夹具对不同规格钣金件的兼容。换型时间从传统方案的2小时缩短至15分钟，显著提升产线柔性化水平。",
+    "deliverables": [
+      "柔性夹具三维模型",
+      "定位模块零件图",
+      "快换接口详图",
+      "换型操作指导书"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_023",
+    "project_type": "assembly_fixture",
+    "category": "tooling_fixture",
+    "summary": "钢轨装夹夹具三维建模图纸 solidworks设计。标签：钢轨装夹、重载夹持、自锁机构。为轨道交通维护设备设计钢轨装夹夹具，采用楔形自锁增力机构，实现大吨位工件的可靠夹持。夹具夹持力达20kN以上，具有过载保护功能，防止夹伤钢轨表面。已完成受力分析与强度校核。",
+    "deliverables": [
+      "夹具三维模型",
+      "受力分析报告",
+      "零件图",
+      "装配图与使用规范"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_024",
+    "project_type": "assembly_fixture",
+    "category": "tooling_fixture",
+    "summary": "钻镗工装夹具三维建模图纸 Solidworks设计 附dwg格式。标签：钻镗夹具、精密镗孔、导向定位。为箱体类零件的钻镗工序设计专用夹具，采用一面两销定位方案，配合钻套与镗模导向，确保孔系位置精度。夹具刚性好、排屑顺畅，适配Z5125钻床与T611镗床。提供dwg格式二维图纸，可直接用于车间加工。",
+    "deliverables": [
+      "夹具三维模型",
+      "二维工程图（dwg格式）",
+      "钻套/导向套选型表",
+      "定位误差分析"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_025",
+    "project_type": "assembly_fixture",
+    "category": "tooling_fixture",
+    "summary": "产品固定夹具3D图纸 Solidworks设计。标签：产品固定、快速装夹、防错设计。为装配产线设计产品固定夹具，采用肘节夹钳与仿形定位座组合方案，实现产品的快速装夹与防错定位。夹具接触面采用聚氨酯软垫，防止产品表面划伤。操作简便，单手即可完成装夹动作，适合节拍型产线使用。",
+    "deliverables": [
+      "夹具三维模型",
+      "仿形座零件图",
+      "零件图与装配图",
+      "操作指导书"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_026",
+    "project_type": "assembly_fixture",
+    "category": "tooling_fixture",
+    "summary": "柔性夹具（夹书系统）3D模型图纸 Solidworks设计。标签：柔性夹持、夹书系统、无损夹持。设计一种柔性夹具系统（夹书系统），采用气囊式夹持原理，通过充气膨胀实现工件的均匀无损夹持。适用于薄壁件、易变形件与表面敏感工件的固定场景。夹持力可调，夹持面自适应工件轮廓，有效避免夹痕与变形。",
+    "deliverables": [
+      "柔性夹具三维模型",
+      "气囊选型与气路图",
+      "零件图",
+      "压力参数与使用规范"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_027",
+    "project_type": "assembly_fixture",
+    "category": "tooling_fixture",
+    "summary": "某加工中心固定夹具焊接工装3D数模图纸 Solidworks设计。标签：加工中心、焊接工装、精密定位。为立式加工中心设计配套固定夹具与焊接工装，通过高精度定位销与液压夹紧系统实现工件的快速装夹与精准定位。夹具底座与加工中心工作台采用标准T型槽接口，确保重复装夹精度≤0.02mm。整机使用Solidworks完成建模与装配验证。",
+    "deliverables": [
+      "焊接工装三维模型",
+      "夹具零件图",
+      "液压原理图",
+      "装夹操作指导书"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_028",
+    "project_type": "assembly_fixture",
+    "category": "tooling_fixture",
+    "summary": "夹具三面夹紧3D数模图纸 Solidworks设计。标签：三面夹紧、均匀夹持、防变形。设计三面同步夹紧夹具，通过三个方向的联动夹紧机构实现工件的均匀受力夹持，有效防止薄壁件与异形件在加工过程中的变形。夹紧力可调，适配不同材质与尺寸的工件。结构紧凑，适用于CNC加工中心与数控车床的批量加工场景。",
+    "deliverables": [
+      "三面夹紧夹具三维模型",
+      "零件图",
+      "夹紧力计算书",
+      "装配图"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_029",
+    "project_type": "assembly_fixture",
+    "category": "tooling_fixture",
+    "summary": "汽车车身焊接夹具3D模型 Catia设计。标签：汽车车身、焊接夹具、Catia建模。使用Catia为汽车车身焊接产线设计专用夹具系统，涵盖侧围、地板、顶盖等分总成的定位与夹紧方案。夹具采用模块化骨架+仿形定位块设计，关键定位点坐标精度达±0.1mm。已完成全部夹具的三维建模、干涉检查与运动仿真验证。",
+    "deliverables": [
+      "车身焊接夹具三维模型",
+      "定位点坐标表",
+      "零件加工图",
+      "装配调试指导书"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_030",
+    "project_type": "assembly_fixture",
+    "category": "tooling_fixture",
+    "summary": "四爪变距夹具结构3D图纸 INVENTOR设计。标签：变距夹具、四爪联动、INVENTOR建模。设计四爪变距夹具，通过丝杠与连杆组合机构实现四个夹爪的同步等距或差距开合，适配不同直径工件的自动夹持。夹具响应速度快、夹持力均匀，适用于机器人上下料与自动化装配线。使用INVENTOR完成全部建模与运动仿真。",
+    "deliverables": [
+      "四爪夹具三维模型",
+      "丝杠选型说明",
+      "零件图",
+      "运动仿真截图"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_031",
+    "project_type": "test_fixture",
+    "category": "test_fixture",
+    "summary": "小夹手测试功能治具3D模型图纸 Solidworks设计。标签：夹手测试、功能验证、精密探针。为电子产品客户设计小夹手功能测试治具，集成精密探针模组与信号采集接口，实现对夹手组件的夹持力、行程与电气连通性的一站式测试。治具操作简便，测试结果自动记录并判定OK/NG，有效保障产品出厂良率。",
+    "deliverables": [
+      "治具三维模型",
+      "探针布局图",
+      "电气接线图",
+      "测试作业指导书"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_032",
+    "project_type": "test_fixture",
+    "category": "test_fixture",
+    "summary": "简易板卡测试治具3D模型图纸 Solidworks设计。标签：板卡测试、ICT测试、快速换型。为PCBA产线设计简易板卡功能测试治具，采用下压式探针结构配合弹簧导向，实现板卡关键节点的电气接触测试。治具结构轻量化，支持快速更换探针板以适配不同型号板卡，测试效率较手动检测提升5倍以上。",
+    "deliverables": [
+      "板卡治具三维模型",
+      "探针板零件图",
+      "测试点对照表",
+      "操作指导书"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_033",
+    "project_type": "test_fixture",
+    "category": "test_fixture",
+    "summary": "LED视觉检测LED测试治具3D数模图纸 Solidworks设计。标签：LED检测、视觉定位、自动化测试。为LED封装客户设计配合视觉系统的LED测试治具，治具提供精准的LED定位与电气接口，视觉系统完成外观检测与极性判定。治具定位精度±0.05mm，支持多排LED同时测试，满足高速分选产线的节拍要求。",
+    "deliverables": [
+      "LED测试治具三维模型",
+      "定位结构详图",
+      "电气接口图",
+      "视觉标定说明"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_034",
+    "project_type": "test_fixture",
+    "category": "test_fixture",
+    "summary": "治具组装图3D模型图纸 Solidworks设计。标签：治具组装、模块化设计、标准件选型。完成多套组装治具的三维建模与工程出图，治具涵盖定位底座、夹紧组件、导向机构与检测模块。全部采用标准件+自制件组合方案，降低加工成本与维护难度。装配图标注完整的配合公差与装配顺序，方便车间快速组装。",
+    "deliverables": [
+      "治具组装三维模型",
+      "零件图与装配图",
+      "标准件BOM",
+      "装配工艺流程卡"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_035",
+    "project_type": "test_fixture",
+    "category": "test_fixture",
+    "summary": "治具装配 压合治具等3D图纸 x_t格式。标签：压合治具、装配工装、通用格式。设计多种压合与装配治具，包括产品压合定位治具、按键行程测试治具与气密性检测治具等。治具均采用模块化结构，关键零件使用铝合金或POM材料，保证刚性与轻量化的平衡。提供x_t通用格式，便于客户根据实际需求进行二次修改。",
+    "deliverables": [
+      "压合治具三维模型（x_t格式）",
+      "零件图",
+      "材料清单",
+      "使用说明"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_036",
+    "project_type": "drawing_conversion",
+    "category": "drawing_modeling",
+    "summary": "海洋电缆三维建模图纸 inventor设计。标签：海洋电缆、多层结构、Inventor建模。使用Inventor完成海洋电缆的三维建模，涵盖导体、绝缘层、屏蔽层、铠装层与外护套等多层同轴结构。精确模拟各层材料与壁厚参数，模型可用于后续有限元分析与制造工艺规划。输出完整工程图纸与截面详图。",
+    "deliverables": [
+      "海洋电缆三维模型",
+      "截面详图",
+      "各层尺寸标注图",
+      "材料规格表"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_037",
+    "project_type": "drawing_conversion",
+    "category": "drawing_modeling",
+    "summary": "双离合器三维建模图纸3D模型图纸 SolidWorks设计。标签：双离合器、传动系统、SolidWorks建模。使用SolidWorks完成汽车双离合器的完整三维建模，包含内外离合器毂、摩擦片组、膜片弹簧、分离轴承与操纵机构等全部零部件。关键配合尺寸均已标注公差，模型可直接用于运动仿真与有限元分析。",
+    "deliverables": [
+      "双离合器三维总装模型",
+      "零件图（含公差）",
+      "装配爆炸图",
+      "关键尺寸参数表"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_038",
+    "project_type": "drawing_conversion",
+    "category": "drawing_modeling",
+    "summary": "工程拖板车三维建模图纸 拖车挂车3D图纸 step格式 SolidWorks。标签：工程拖车、挂车结构、STEP格式。完成工程拖板车的整车三维建模，涵盖车架底盘、悬挂系统、转向机构、制动管路与牵引连接装置。整车结构按照公路运输标准设计，承载能力经过计算校核。提供STEP通用格式，方便客户在不同CAD平台中查看与修改。",
+    "deliverables": [
+      "拖车整车三维模型（STEP格式）",
+      "车架焊接详图",
+      "悬挂/转向零件图",
+      "整车参数表"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_039",
+    "project_type": "drawing_conversion",
+    "category": "drawing_modeling",
+    "summary": "粉碎机三维建模图纸 solidworks设计 附IGS格式。标签：粉碎机、破碎机构、IGS格式。使用SolidWorks完成工业粉碎机的整机三维建模，涵盖进料斗、破碎腔、锤片转子、筛网与出料系统。重点解决锤片排列方式、转子动平衡与筛网更换便捷性等设计问题。提供IGS通用格式，便于客户进行后续分析与优化。",
+    "deliverables": [
+      "粉碎机三维模型（IGS格式）",
+      "转子装配图",
+      "锤片零件图",
+      "筛网规格与选型表"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_040",
+    "project_type": "reverse_engineering",
+    "category": "reverse_engineering",
+    "summary": "手持式磨床逆向工程3D模型图纸 UG设计 附X_T。标签：逆向工程、手持磨床、三维扫描。基于三维扫描点云数据，对手持式磨床进行逆向建模。完整还原外壳曲面、内部传动结构与电机安装座等关键部位。在逆向基础上优化局部结构，提升散热效率与维护便捷性。提供X_T通用格式，方便客户在任意CAD软件中二次开发。",
+    "deliverables": [
+      "逆向三维模型（X_T格式）",
+      "点云对比报告",
+      "优化建议方案",
+      "工程图纸"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_041",
+    "project_type": "reverse_engineering",
+    "category": "reverse_engineering",
+    "summary": "机床改造高精度机床3D数模图纸 Solidworks设计。标签：机床改造、精度升级、结构优化。为客户旧款普通机床进行高精度化改造设计，通过更换精密滚珠丝杠、重新设计导轨支撑结构、增加光栅尺反馈等手段，将机床定位精度从0.05mm提升至0.01mm。完成全部改造部件的三维建模与装配验证，确保新旧结构无缝衔接。",
+    "deliverables": [
+      "改造方案三维模型",
+      "新增零件图纸",
+      "改造装配图",
+      "精度检测报告"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_042",
+    "project_type": "reverse_engineering",
+    "category": "reverse_engineering",
+    "summary": "取料机构3D图纸 Solidworks设计。标签：取料机构、逆向建模、结构复刻。基于客户提供的实物样品与测量数据，对进口取料机构进行逆向建模与结构复刻。完整还原气缸驱动、连杆传动与吸盘取料等核心结构，在复刻基础上优化密封件规格与易损件更换方案，降低后期维护成本。",
+    "deliverables": [
+      "取料机构三维模型",
+      "零件图",
+      "易损件清单",
+      "装配与调试说明"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_043",
+    "project_type": "reverse_engineering",
+    "category": "reverse_engineering",
+    "summary": "手动托盘升降机改装成AGV设计 Solidworks设计。标签：AGV改装、自动化升级、驱动集成。将手动托盘升降机改装为AGV自动搬运车，新增电机驱动轮组、导航传感器安装座、电池仓与控制柜等模块。通过Solidworks完成整机改造建模与干涉检查，确保新增模块与原有升降机构的兼容性与安全性。改造成本仅为新购AGV的30%。",
+    "deliverables": [
+      "AGV改造三维模型",
+      "驱动系统图纸",
+      "电气安装布局图",
+      "改造BOM清单"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_044",
+    "project_type": "reverse_engineering",
+    "category": "reverse_engineering",
+    "summary": "发动机逆向模型3D图纸 Solidworks设计 附x_t格式。标签：发动机逆向、精密测绘、x_t格式。对某型发动机进行精密测绘与逆向建模，涵盖缸体、缸盖、曲轴、连杆、凸轮轴与进排气系统等核心部件。使用三坐标测量机获取关键尺寸数据，结合三维扫描完成复杂曲面的高质量重构。提供x_t通用格式，支持客户后续的结构优化与国产替代方案。",
+    "deliverables": [
+      "发动机整机逆向模型（x_t格式）",
+      "关键零件测绘图",
+      "三坐标检测报告",
+      "装配关系说明"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_045",
+    "project_type": "reverse_engineering",
+    "category": "reverse_engineering",
+    "summary": "反向横式电机工装3D模型图纸 Solidworks设计。标签：电机工装、反向设计、结构还原。根据客户提供的实物电机工装进行反向测绘与设计还原，完成安装底座、夹持机构、定位导向与快换接口等全部结构的三维建模。在还原设计基础上，优化材料选型与表面处理工艺，提升工装的耐久性与防腐蚀能力。",
+    "deliverables": [
+      "电机工装三维模型",
+      "零件图",
+      "材料/表面处理规格表",
+      "装配指导书"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_046",
+    "project_type": "reverse_engineering",
+    "category": "reverse_engineering",
+    "summary": "手动车床改装的数控车床3D数模图纸 Solidworks设计。标签：数控改装、伺服驱动、自动化升级。将传统手动车床改装为数控车床，新增伺服电机驱动模块、滚珠丝杠进给系统、刀架电动化改造与CNC控制柜安装结构。完成全部改装部件的三维建模与干涉验证，确保改装后车床的加工精度达到IT7级，大幅提升加工效率与一致性。",
+    "deliverables": [
+      "改装三维模型",
+      "伺服安装图纸",
+      "电气柜布局图",
+      "改装调试规范"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_047",
+    "project_type": "reverse_engineering",
+    "category": "reverse_engineering",
+    "summary": "拾取和放置机构拼装模型3D图纸 INVENTOR设计。标签：拾放机构、逆向复原、INVENTOR建模。对进口拾取放置（Pick & Place）机构进行逆向复原建模，完整还原气动吸盘、直线导轨、旋转气缸与传感器等核心组件。使用INVENTOR完成全部建模与装配验证，并针对国内标准件进行适配替换，降低采购成本与维护周期。",
+    "deliverables": [
+      "Pick & Place机构三维模型",
+      "零件图与装配图",
+      "标准件替换清单",
+      "气路原理图"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_048",
+    "project_type": "reverse_engineering",
+    "category": "reverse_engineering",
+    "summary": "蒸汽机车转向架3D模型图纸 Solidworks设计。标签：蒸汽机车、转向架、历史复原。对历史蒸汽机车转向架进行测绘复原与三维建模，完整还原轮对、弹簧悬挂装置、均衡梁、制动杠杆与牵引销等经典结构。建模过程结合历史图纸档案与实物测量数据，确保结构的准确性与还原度。模型可用于博物馆展示、教学研究与修复制造参考。",
+    "deliverables": [
+      "转向架三维模型",
+      "各组件详图",
+      "历史图纸对照报告",
+      "关键尺寸参数表"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_049",
+    "project_type": "simulation_analysis",
+    "category": "simulation_analysis",
+    "summary": "半自动钻床设计及运动学分析 PROE三维图+文档+仿真。标签：钻床设计、运动学分析、PROE仿真。为半自动钻床进行完整的设计与运动学分析，使用PROE建立三维模型并完成进给机构、主轴旋转与自动退刀等动作的运动学仿真。输出位移、速度与加速度曲线，验证机构运动平稳性与定位精度。附带完整的设计计算文档与仿真报告。",
+    "deliverables": [
+      "钻床三维模型（PROE）",
+      "运动学仿真报告",
+      "设计计算书",
+      "运动曲线截图"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_050",
+    "project_type": "simulation_analysis",
+    "category": "simulation_analysis",
+    "summary": "收割机运动仿真。标签：收割机、运动仿真、机构验证。对收割机的切割机构、输送搅龙与行走底盘进行运动学仿真，验证各机构在不同工况下的运动可行性与干涉情况。通过仿真优化割刀行程与转速参数，提升收割效率并降低堵料风险。仿真结果以动画与数据曲线形式输出。",
+    "deliverables": [
+      "收割机三维模型",
+      "运动仿真动画",
+      "干涉检查报告",
+      "参数优化建议"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_051",
+    "project_type": "simulation_analysis",
+    "category": "simulation_analysis",
+    "summary": "齿轮传动机构运动仿真。标签：齿轮传动、运动仿真、啮合分析。对多级齿轮传动机构进行运动仿真，验证齿轮啮合状态、传动比精度与运转平稳性。通过仿真识别啮合干涉与异常振动风险点，优化齿轮参数后传动平稳性显著提升。仿真输出包括啮合接触分析与转速/扭矩传递曲线。",
+    "deliverables": [
+      "传动机构三维模型",
+      "齿轮啮合仿真截图",
+      "传动比验算报告",
+      "优化建议"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_052",
+    "project_type": "simulation_analysis",
+    "category": "simulation_analysis",
+    "summary": "简图仿真Adams。标签：Adams仿真、多体动力学、机构优化。使用Adams对复杂连杆机构进行多体动力学仿真，建立精确的刚体模型与约束关系，模拟实际工况下的力与运动响应。通过仿真结果优化连杆尺寸与铰接点位置，降低机构运动过程中的冲击与磨损。输出完整的仿真分析报告。",
+    "deliverables": [
+      "Adams仿真模型",
+      "力/运动响应曲线",
+      "优化前后对比数据",
+      "仿真报告文档"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_053",
+    "project_type": "simulation_analysis",
+    "category": "simulation_analysis",
+    "summary": "UG齿轮机构运动仿真。标签：UG仿真、齿轮机构、运动验证。使用UG（NX）运动仿真模块对齿轮机构进行运动学验证，设置齿轮副约束与驱动条件，模拟不同转速下的啮合状态。通过仿真确认传动比的准确性与机构运转的平稳性，提前发现潜在的干涉与碰撞风险。",
+    "deliverables": [
+      "齿轮机构UG模型",
+      "运动仿真截图",
+      "传动比验算数据",
+      "干涉检查报告"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_054",
+    "project_type": "simulation_analysis",
+    "category": "simulation_analysis",
+    "summary": "吊轮绳子机构运动仿真＋有限元分析。标签：吊轮机构、运动+FEA、耦合分析。对吊轮绳子机构进行运动仿真与有限元分析的联合仿真。运动仿真验证起升与行走过程中绳子的张力变化与滑轮接触状态；有限元分析校核吊轮轴、支架与绳卡的强度与疲劳寿命。两项分析结果结合，确保机构在全寿命周期内的安全可靠性。",
+    "deliverables": [
+      "运动仿真报告",
+      "有限元分析报告",
+      "应力云图与疲劳寿命",
+      "安全系数校核表"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_055",
+    "project_type": "simulation_analysis",
+    "category": "simulation_analysis",
+    "summary": "百叶窗有限元仿真。标签：百叶窗、有限元分析、风载仿真。对建筑百叶窗结构进行有限元仿真分析，模拟不同风压工况下叶片与骨架的应力分布与变形情况。通过优化叶片截面形状与骨架间距，在满足抗风压要求的前提下实现轻量化设计。仿真结果提供应力云图、位移分布与结构优化建议。",
+    "deliverables": [
+      "有限元分析报告",
+      "应力/位移云图",
+      "风载工况表",
+      "结构优化方案"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  },
+  {
+    "case_id": "sonsen_056",
+    "project_type": "simulation_analysis",
+    "category": "simulation_analysis",
+    "summary": "运动仿真图。标签：运动仿真、轨迹分析、参数优化。对自动化机构进行运动仿真与轨迹分析，输出关键点的位移、速度与加速度变化曲线。通过仿真数据优化凸轮轮廓与连杆尺寸参数，使机构运动更加平稳，冲击与振动显著降低。仿真结果直接指导后续加工与装配调试。",
+    "deliverables": [
+      "运动仿真模型",
+      "轨迹/速度/加速度曲线",
+      "参数优化对比表",
+      "仿真结论报告"
+    ],
+    "risk_notes": [],
+    "typical_hours": null,
+    "price_range_cny": null
+  }
+]

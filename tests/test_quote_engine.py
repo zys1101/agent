@@ -38,6 +38,8 @@ def test_simple_part_budget_range_golden(engine: QuoteEngine):
     result = engine.calculate(requirement, make_classification())
 
     assert result.quote_type == "budget_range"
+    assert result.category == "product_structure"
+    assert result.category_name == "产品结构设计"
     assert not result.manual_review_required
     assert result.estimated_hours.total == 13.8
     assert result.hours_by_role["junior_mechanical_engineer"] == 9.2
@@ -149,6 +151,28 @@ def test_missing_load_and_interface_review(engine: QuoteEngine):
     result = engine.calculate(requirement, make_classification("pneumatic_press_fixture", 0.82))
     assert "risk_missing_load_or_force" in result.review_reasons
     assert "risk_missing_critical_interface" in result.review_reasons
+
+
+def test_category_precedence_and_fallback(engine: QuoteEngine):
+    # 分类结果带大类时优先采用
+    result = engine.calculate(
+        make_requirement(project_type_candidate="pneumatic_press_fixture"),
+        ProjectClassification(
+            project_type="pneumatic_press_fixture",
+            confidence=0.9,
+            category="test_fixture",
+        ),
+    )
+    assert result.category == "test_fixture"
+    assert result.category_name == "测试治具设计"
+
+    # 分类结果没带大类（或大类无效）时按 project_type 归属推导
+    result2 = engine.calculate(
+        make_requirement(project_type_candidate="pneumatic_press_fixture"),
+        ProjectClassification(project_type="pneumatic_press_fixture", confidence=0.9),
+    )
+    assert result2.category == "tooling_fixture"
+    assert result2.category_name == "工装夹具设计"
 
 
 def test_determinism(engine: QuoteEngine):

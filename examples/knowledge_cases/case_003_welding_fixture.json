@@ -1,6 +1,7 @@
 {
   "case_id": "case_003",
   "project_type": "welding_fixture",
+  "category": "tooling_fixture",
   "summary": "焊接夹具：多定位多夹紧，含焊接避让设计，工件为汽车支架类，交期10个工作日",
   "deliverables": ["three_d_assembly", "two_d_assembly_drawing", "bom"],
   "risk_notes": [

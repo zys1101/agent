@@ -47,6 +47,15 @@ class ProjectTypeRule(BaseModel):
     base_cycle_days: float = Field(gt=0)
     default_role: str
     manual_review: bool = False
+    category: str = ""
+
+
+class CaseCategory(BaseModel):
+    """业务大类（对齐官网案例/设计类型分类）。key 为字典键，name 为对外展示名称。"""
+
+    id: int = Field(ge=1)
+    name: str
+    description: str = ""
 
 
 class DeliverableRule(BaseModel):
@@ -118,6 +127,7 @@ class QuoteRules(BaseModel):
     rule_set_version: str
     currency: str
     quote_type_default: str = "budget_range"
+    case_categories: dict[str, CaseCategory]
     operating_assumptions: OperatingAssumptions
     rate_cards: dict[str, Rate]
     price_range_by_completeness: dict[str, PriceRangeTier]
@@ -148,6 +158,15 @@ class QuoteRules(BaseModel):
         rate_names = set(self.rate_cards)
         if not self.completeness_templates:
             raise ValueError("completeness_templates must not be empty")
+        if not self.case_categories:
+            raise ValueError("case_categories must not be empty")
+        for code, pt in self.project_types.items():
+            if not pt.category:
+                raise ValueError(f"project_types[{code}].category is required")
+            if pt.category not in self.case_categories:
+                raise ValueError(
+                    f"project_types[{code}].category unknown: {pt.category}"
+                )
         unknown_families = set(self.project_families.values()) - set(self.completeness_templates)
         if unknown_families:
             raise ValueError(f"project_families reference unknown templates: {sorted(unknown_families)}")
@@ -196,3 +215,17 @@ class QuoteRules(BaseModel):
             if prev.max_count >= cur.max_count:
                 raise ValueError("part_count_factors bands must be strictly increasing")
         return self
+
+    # ---- 业务大类辅助 ----
+
+    def category_of(self, project_type: str) -> str:
+        """返回 project_type 对应的业务大类 key（未知类型返回空串）。"""
+        pt = self.project_types.get(project_type)
+        if pt is None:
+            return ""
+        return pt.category
+
+    def category_name_of(self, category: str) -> str:
+        """返回业务大类的对外名称（未知 key 返回原值）。"""
+        cat = self.case_categories.get(category)
+        return cat.name if cat is not None else category

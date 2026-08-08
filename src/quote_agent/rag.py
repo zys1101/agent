@@ -24,6 +24,7 @@ from qdrant_client.models import (
 class CaseRecord(BaseModel):
     case_id: str
     project_type: str
+    category: str | None = Field(default=None, description="业务大类 key（rules.case_categories）")
     summary: str
     deliverables: list[str] = Field(default_factory=list)
     risk_notes: list[str] = Field(default_factory=list)
@@ -93,14 +94,29 @@ class RagStore:
         self,
         query: str,
         project_type: str | None = None,
+        category: str | None = None,
         top_k: int = 3,
     ) -> list[tuple[CaseRecord, float]]:
         vector = self.embed_fn([query])[0]
         query_filter = None
+        must: list = []
+        should: list = []
         if project_type:
-            query_filter = Filter(
-                must=[FieldCondition(key="project_type", match=MatchValue(value=project_type))]
-            )
+            must.append(FieldCondition(key="project_type", match=MatchValue(value=project_type)))
+        if category:
+            # project_type 与业务大类任一匹配即可命中（官网案例可能只按大类入库）
+            if project_type:
+                should = [
+                    FieldCondition(key="project_type", match=MatchValue(value=project_type)),
+                    FieldCondition(key="category", match=MatchValue(value=category)),
+                ]
+                must = []
+            else:
+                must.append(FieldCondition(key="category", match=MatchValue(value=category)))
+        if must:
+            query_filter = Filter(must=must)
+        elif should:
+            query_filter = Filter(should=should)
         # qdrant-client >=1.10 用 query_points 取代 search
         response = self.client.query_points(
             collection_name=self.collection,

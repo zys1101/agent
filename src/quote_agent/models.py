@@ -122,6 +122,7 @@ class ClassificationCandidate(BaseModel):
 class ProjectClassification(BaseModel):
     project_type: str
     confidence: float | None = Field(default=None, ge=0, le=1)
+    category: str | None = Field(default=None, description="业务大类 key，来自 rules.case_categories")
     candidates: list[ClassificationCandidate] = []
 
 
@@ -159,6 +160,8 @@ class QuoteCalculation(BaseModel):
     quote_type: str
     currency: str
     project_type: str
+    category: str = ""
+    category_name: str = ""
     estimated_hours: EstimatedHours
     hours_by_role: dict[str, float]
     estimated_standard_cycle_days: float

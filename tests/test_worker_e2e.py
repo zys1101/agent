@@ -112,6 +112,8 @@ def test_worker_end_to_end(tmp_path):
 
         summary = result["result"]
         assert summary["project_type"] == "pneumatic_press_fixture"
+        assert summary["category"] == "tooling_fixture"
+        assert summary["category_name"] == "工装夹具设计"
         assert summary["completeness_score"] == 0.6286
         assert summary["manual_review_required"] is True
         assert "completeness_below_0_80" in summary["manual_review_reasons"]
@@ -125,7 +127,9 @@ def test_worker_end_to_end(tmp_path):
         # 快照已保存，原始目录已清理
         snapshot = settings.snapshot_dir / f"{task_id}.json"
         assert snapshot.exists()
-        assert json.loads(snapshot.read_text(encoding="utf-8"))["result"]["project_type"] == "pneumatic_press_fixture"
+        snapshot_result = json.loads(snapshot.read_text(encoding="utf-8"))["result"]
+        assert snapshot_result["project_type"] == "pneumatic_press_fixture"
+        assert snapshot_result["category"] == "tooling_fixture"
         assert not (settings.work_dir / task_id).exists()
         assert store.task(task_id)["status"] == "completed"
     finally:

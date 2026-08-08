@@ -77,7 +77,25 @@ def test_classification_agent_returns_model(rules: QuoteRules):
         [],
     )
     assert result.project_type == "welding_fixture"
+    # 模型未返回 category 时，按 project_type 归属推导业务大类
+    assert result.category == "tooling_fixture"
     assert len(result.candidates) == 2
+
+
+def test_classification_prompt_contains_category_taxonomy(rules: QuoteRules, monkeypatch):
+    captured = {}
+
+    class CallableLLM:
+        def generate_structured(self, system, user, model_cls, images=None):
+            captured["user"] = user
+            return ProjectClassification(project_type="assembly_fixture", confidence=0.9)
+
+    agent = ClassificationAgent(CallableLLM(), rules)
+    agent.classify(ProjectRequirement(project_type_candidate="x", completeness_score=0.5), [])
+    assert "整机设备设计" in captured["user"]
+    assert "工装夹具设计" in captured["user"]
+    assert "仿真分析" in captured["user"]
+    assert "assembly_fixture->tooling_fixture" in captured["user"]
 
 
 def test_extraction_prompt_contains_enums(rules: QuoteRules, monkeypatch):

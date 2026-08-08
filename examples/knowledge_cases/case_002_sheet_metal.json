@@ -1,6 +1,7 @@
 {
   "case_id": "case_002",
   "project_type": "sheet_metal_part",
+  "category": "sheet_metal_cabinet",
   "summary": "机柜钣金件设计：折弯件+罩壳，材料Q235，板厚1.5-2mm，交付3D模型与2D工程图",
   "deliverables": ["three_d_model", "two_d_part_drawing"],
   "risk_notes": [
