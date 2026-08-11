@@ -25,4 +25,10 @@
 9. 业务大类分类规范（官网案例/设计类型分类）
 12-case-category-taxonomy.md
 
+10. RAG 案例批量导入规范（Qdrant）
+13-rag-data-import.md
+
+11. AI 报价方法对接文档（服务器后端改造）
+14-ai-quote-method-handoff.md
+
 等有历史项目数据后，再写 RAG 知识库规范。

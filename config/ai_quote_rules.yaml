@@ -1,0 +1,99 @@
+# AI 报价方法（AI_quote 原型）规则配置
+# 规则集版本: 1.0.0-ai-quote
+# 说明：本配置复刻 E:\Program Files\AI_quote 原型经过验证的定价方法
+#       （LLM 只评估工时/复杂度/加急/交付物，价格由代码按固定单价计算）。
+# 任何修改都必须升级 rule_set_version 并记录变更原因。
+
+rule_set_version: "1.0.0-ai-quote"
+currency: "CNY"
+quote_type_default: "budget_range"
+
+# 定价核心：工时单价（元/小时）
+hourly_rate: 50
+
+# 复杂度系数（3 档）
+complexity_multipliers:
+  simple:  0.8
+  normal:  1.0
+  complex: 1.2
+
+# 加急系数（6 档，按交付天数由代码判定，不由 LLM 决定）
+urgency_multipliers:
+  0: 0.85   # 极宽松（>30 天）
+  1: 0.90   # 宽松（20-30 天）
+  2: 0.95   # 稍宽松（10-20 天）
+  3: 1.00   # 正常（5-10 天）
+  4: 1.30   # 加急（2-5 天）
+  5: 1.50   # 特急（<2 天）
+
+urgency_labels:
+  0: 极宽松
+  1: 宽松
+  2: 稍宽松
+  3: 正常
+  4: 加急
+  5: 特急
+
+# 交付物固定单价（元/个/份；加工图 = 零件图单价 × 1.5）
+deliverable_prices:
+  assembly:           150
+  part_drawing:       20
+  machining_drawing:  30
+  process_card:       20
+  procedure_card:     20
+  blank_drawing:      20
+  instruction_book:   100
+
+# 是否在工时费之外额外加上交付物固定单价（原型默认关闭，与 v2 行为一致）
+enable_deliverable_addon: false
+
+# 报价取整单位（元）；原型为整数元，这里保留可配置
+quote_rounding_unit_cny: 1
+
+# 价格区间系数（按需求完整度；不提供完整度时只出建议价，区间为空）
+price_range_by_completeness:
+  high:
+    min_score: 0.90
+    min_factor: 0.95
+    max_factor: 1.05
+  medium:
+    min_score: 0.80
+    min_factor: 0.90
+    max_factor: 1.10
+  low:
+    min_score: 0.60
+    min_factor: 0.85
+    max_factor: 1.20
+
+manual_review:
+  quote_amount_above_cny: 50000
+  completeness_below: 0.80
+  preliminary_research_below: 0.60
+
+# 参考价格表：原样喂给大模型，帮助其估算工时量级（不是计算公式）
+reference_price_table: |
+  【参考价格表 — 供你评估工时时参考，不是最终计算公式】
+
+  一、整机设备设计
+    - 示意图：简单 300-500元，中度 500-1000元，困难 1000-2000元
+    - 加工图纸：简单 2000-3000元，中度 3000-5000元，困难 5000-10000元
+
+  二、固定单价交付物
+    - 装配体：150元/个
+    - 零件图/工序卡/规程卡/毛坯图：20元/张
+    - 说明书：100元/份
+    - 加工图：在零件图基础上 ×1.5（即30元/张）
+
+  三、实际计算公式（最终报价用这个）
+    最终价格 = 预估工时 × 50元/h × 复杂度系数 × 加急系数
+    - 复杂度系数：特别简单 ×0.8，正常 ×1.0，特别复杂 ×1.2
+    - 加急系数（6档）：
+      0-极宽松(>30天) ×0.85
+      1-宽松(20-30天) ×0.90
+      2-稍宽松(10-20天) ×0.95
+      3-正常(5-10天) ×1.00
+      4-加急(2-5天) ×1.30
+      5-特急(<2天) ×1.50
+
+  请根据参考价格表理解不同类型任务的量级，但最终输出预估工时和系数即可，
+  实际价格由系统代码计算。
