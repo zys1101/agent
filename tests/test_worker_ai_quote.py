@@ -1,53 +1,26 @@
-"""Worker AI 报价模式（原型法）端到端测试：PRICING_MODE=ai_quote。"""
+"""Worker AI 报价模式（原型法）端到端测试：PRICING_MODE=ai_quote。
 
-import json
+与 E:\\Program Files\\AI_quote 原型行为一致：
+- 不做需求完整度评估，不因信息不足拒报，始终输出价格；
+- 工时来自 LLM 评估，价格 = 工时 × 50 × 复杂度 × 加急。
+"""
+
 from pathlib import Path
 
 from quote_agent.ai_evaluator import ImageSummary
 from quote_agent.ai_quote import AiQuoteEvaluation
 from quote_agent.cloud import CloudClient, MockCloudServer, MockCloudStore
 from quote_agent.config import QuoteRules
-from quote_agent.models import ProjectClassification, ProjectRequirement
 from quote_agent.quote_engine import QuoteEngine
 from quote_agent.worker import Worker, WorkerSettings
 
 
 class FakeLLM:
-    def __init__(self, low_completeness: bool = False):
-        self.low_completeness = low_completeness
-        self.last_images = None
-        self.eval_images = None
+    def __init__(self):
         self.image_summary_images = None
+        self.eval_images = None
 
     def generate_structured(self, system, user, model_cls, images=None):
-        if model_cls is ProjectRequirement:
-            self.last_images = images
-            if self.low_completeness:
-                # 关键字段大量缺失 -> 确定性完整度 < 0.60
-                payload = {
-                    "project_type_candidate": "simple_part",
-                    "function_description": "设计一个简易支架",
-                    "completeness_score": 0.5,
-                }
-            else:
-                payload = {
-                    "project_type_candidate": "simple_part",
-                    "requested_deliverables": ["two_d_part_drawing"],
-                    "deadline_workdays": 10.0,
-                    "function_description": "设计一个简易支架",
-                    "provided_materials": ["requirements.txt"],
-                    "revision_policy": "limited",
-                    "acceptance_criteria_known": True,
-                }
-            return ProjectRequirement.model_validate(
-                payload
-            )
-        if model_cls is ProjectClassification:
-            return ProjectClassification(
-                project_type="simple_part",
-                confidence=0.9,
-                category="product_structure",
-            )
         if model_cls is ImageSummary:
             self.image_summary_images = images
             return ImageSummary(summary="支架结构图：简单折弯件")
@@ -67,17 +40,20 @@ class FakeLLM:
         raise AssertionError(f"unexpected model_cls: {model_cls}")
 
 
-def _make_worker(tmp_path, store, llm=None):
+def _make_worker(tmp_path, store, form_override=None):
     sample = tmp_path / "requirements.txt"
     sample.write_text("设计一个简易支架。", encoding="utf-8")
+    form = {
+        "project_name": "支架",
+        "customer_description": "设计一个简易支架",
+        "deadline_date": "",
+        "requested_deliverables": [],
+        "currency": "CNY",
+    }
+    if form_override:
+        form.update(form_override)
     task_id = store.seed_task(
-        customer_form={
-            "project_name": "支架",
-            "customer_description": "设计一个简易支架",
-            "deadline_date": "",
-            "requested_deliverables": [],
-            "currency": "CNY",
-        },
+        customer_form=form,
         files=[
             {
                 "file_id": "file_01",
@@ -97,7 +73,7 @@ def _make_worker(tmp_path, store, llm=None):
     )
     worker = Worker(
         cloud=CloudClient("http://unused", "t", "test-agent"),
-        llm=llm or FakeLLM(),
+        llm=FakeLLM(),
         rules=rules,
         engine=QuoteEngine(rules),
         settings=settings,
@@ -105,8 +81,15 @@ def _make_worker(tmp_path, store, llm=None):
     return task_id, worker, settings
 
 
+def _claim_and_run(worker, task_id, tmp_path):
+    task = worker.cloud.claim()
+    assert task is not None and task.task_id == task_id
+    result = worker.run_task(task)
+    return result
+
+
 def test_ai_quote_default_mode_outputs_prototype_scale(tmp_path):
-    """默认 ai_quote 模式：工时来自 LLM 评估（8h），价格 = 8×50 = 400，不是几百小时。"""
+    """默认 ai_quote 模式：8h × 50 = 400 元，单价格（无区间），不做完整度评估。"""
     store = MockCloudStore()
     server = MockCloudServer(store).start()
     try:
@@ -114,22 +97,29 @@ def test_ai_quote_default_mode_outputs_prototype_scale(tmp_path):
         cloud = CloudClient(server.base_url, "dev-token", "test-agent")
         worker.cloud = cloud
 
-        task = cloud.claim()
-        assert task is not None and task.task_id == task_id
-        result = worker.run_task(task)
-
+        result = _claim_and_run(worker, task_id, tmp_path)
         summary = result["result"]
+
         assert summary["estimated_hours"]["total"] == 8
         # 交期 10 天 -> 加急 3（正常系数 1.0），8h × 50元/h = 400
         assert summary["price"] == {
             "currency": "CNY",
-            "minimum": 380,
+            "minimum": None,
             "recommended": 400,
-            "maximum": 420,
+            "maximum": None,
         }
         assert summary["manual_review_required"] is False
         assert summary["manual_review_reasons"] == []
+        # 与原型一致：不做完整度/分类评估，不报信息不足
+        assert summary["completeness_score"] is None
+        assert summary["classification_confidence"] is None
+        assert summary["missing_information"] == []
+        assert summary["clarification_questions"] == []
         assert summary["reviewer_notes"] == []
+        # 类别来自评估结果
+        assert summary["project_type"] == "product_structure"
+        assert summary["category"] == "product_structure"
+        assert summary["category_name"] == "产品结构设计"
 
         # 快照可审计：评估参数、相似案例、图片总结都在
         snapshot = summary["calculation_snapshot"]
@@ -149,22 +139,31 @@ def test_ai_quote_default_mode_outputs_prototype_scale(tmp_path):
         server.stop()
 
 
-def test_ai_quote_low_completeness_requires_review(tmp_path):
-    """完整度低时：转预研报价（不出固定价）并强制人工审核。"""
+def test_ai_quote_always_prices_even_with_sparse_info(tmp_path):
+    """信息几乎为空也必须出价（原型行为），绝不转预研/报信息不足。"""
     store = MockCloudStore()
     server = MockCloudServer(store).start()
     try:
-        task_id, worker, _ = _make_worker(tmp_path, store, llm=FakeLLM(low_completeness=True))
+        task_id, worker, _ = _make_worker(
+            tmp_path,
+            store,
+            form_override={
+                "project_name": "",
+                "customer_description": "",
+                "deadline_date": "",
+            },
+        )
         cloud = CloudClient(server.base_url, "dev-token", "test-agent")
         worker.cloud = cloud
 
-        task = cloud.claim()
-        result = worker.run_task(task)
-
+        result = _claim_and_run(worker, task_id, tmp_path)
         summary = result["result"]
-        assert summary["price"]["recommended"] is None
-        assert summary["manual_review_required"] is True
-        assert "completeness_below_0_80" in summary["manual_review_reasons"]
+
+        assert summary["price"]["recommended"] == 400
+        assert summary["price"]["minimum"] is None
+        assert summary["price"]["maximum"] is None
+        assert summary["manual_review_required"] is False
+        assert summary["missing_information"] == []
     finally:
         server.stop()
 
@@ -209,9 +208,7 @@ def test_ai_quote_passes_images_to_all_steps(tmp_path):
             engine=QuoteEngine(rules),
             settings=settings,
         )
-        task = worker.cloud.claim()
-        assert task is not None and task.task_id == task_id
-        result = worker.run_task(task)
+        result = _claim_and_run(worker, task_id, tmp_path)
 
         assert result["result"]["estimated_hours"]["total"] == 8
         assert fake_llm.image_summary_images and len(fake_llm.image_summary_images) == 1

@@ -229,3 +229,10 @@ class QuoteRules(BaseModel):
         """返回业务大类的对外名称（未知 key 返回原值）。"""
         cat = self.case_categories.get(category)
         return cat.name if cat is not None else category
+
+    def category_key_of_name(self, name: str) -> str:
+        """按大类对外名称反查 key（AI 报价评估结果用）；找不到返回空串。"""
+        for key, cat in self.case_categories.items():
+            if cat.name == name:
+                return key
+        return ""

@@ -209,21 +209,14 @@ class Worker:
     # ---- AI 报价方法（原型：AI 定性，代码定量）----
 
     def _run_ai_quote_pipeline(self, task: ClaimedTask, llm: LLM, parsed: list[ParsedFile]) -> dict:
+        """与 AI_quote 原型完全一致：
+        不做需求完整度评估、不做项目分类、不因信息不足拒报；始终输出价格。
+        """
         ai_rules = AiQuoteRules.load()
-
-        # 1. 提取结构化需求：只用于完整度、澄清问题与交期；价格不经过它
-        t_extract = time.perf_counter()
-        requirement = ExtractionAgent(llm, self.rules).extract(task.customer_form, parsed)
-        self.cache.audit(task.task_id, "extracted", f"in {time.perf_counter() - t_extract:.2f}s")
-        completeness = apply_deterministic_overrides(requirement, self.rules)
-
-        # 2. 分类 + RAG 检索相似案例（并行）
-        classification, rag_cases = self._classify_and_retrieve(task.task_id, llm, requirement, parsed)
-        similar_cases = _format_similar_cases(rag_cases)
-
-        # 3. 图片理解（原型步骤 1：视觉模型总结图片）
+        requirement_text = _prototype_requirement_text(task.customer_form, parsed)
         image_paths = [pf.image_path for pf in parsed if pf.image_path and not pf.errors]
-        requirement_text = _requirement_text(task.customer_form, requirement)
+
+        # 1. 图片理解（原型步骤 1：视觉模型总结图片）
         evaluator = AiQuoteEvaluator(llm, ai_rules)
         image_summary = "无图片"
         if image_paths:
@@ -231,10 +224,15 @@ class Worker:
             image_summary = evaluator.summarize_images(requirement_text, image_paths)
             self.cache.audit(task.task_id, "image_summarized", f"in {time.perf_counter() - t_img:.2f}s")
 
+        # 2. RAG 相似案例（可选，原型步骤 2；未开启 RAG 时为空数组）
+        similar_cases = _format_similar_cases(
+            self._retrieve_ai_cases(task.task_id, f"{requirement_text}\n{image_summary}")
+        )
+
+        # 3. 系统判定加急等级（交付天数映射）
+        delivery_days = _days_until_deadline(task.customer_form.get("deadline_date"))
+
         # 4. 综合评估（原型步骤 4：参考价格表 + 需求 + 图片总结 + 相似案例）
-        delivery_days = requirement.deadline_workdays
-        if delivery_days is None:
-            delivery_days = _days_until_deadline(task.customer_form.get("deadline_date"))
         t_eval = time.perf_counter()
         evaluation = evaluator.evaluate(
             requirement_text=requirement_text,
@@ -246,30 +244,36 @@ class Worker:
         )
         self.cache.audit(task.task_id, "evaluated", f"in {time.perf_counter() - t_eval:.2f}s")
 
-        # 5. 确定性算价（唯一计算价格的地方）
+        # 5. 确定性算价（唯一计算价格的地方；不传完整度，永远出价，与原型一致）
         t_calc = time.perf_counter()
-        pricing = AiQuotePricing(ai_rules).calculate(
-            evaluation,
-            completeness_score=requirement.completeness_score,
-        )
+        pricing = AiQuotePricing(ai_rules).calculate(evaluation)
         self.cache.audit(task.task_id, "calculated", f"in {time.perf_counter() - t_calc:.3f}s")
 
-        project_type = classification.project_type or evaluation.project_category
-        category = classification.category or self.rules.category_of(project_type)
+        category_key = self.rules.category_key_of_name(evaluation.project_category)
         return build_ai_quote_result(
             task=task,
-            requirement=requirement,
-            classification=classification,
             evaluation=evaluation,
             pricing=pricing,
             settings=self.settings,
-            missing_key_fields=completeness.missing_key_fields,
             image_summary=image_summary,
             similar_cases=similar_cases,
-            project_type=project_type,
-            category=category,
-            category_name=self.rules.category_name_of(category),
+            project_type=category_key or evaluation.project_category,
+            category=category_key,
+            category_name=evaluation.project_category or category_key,
         )
+
+    def _retrieve_ai_cases(self, task_id: str, query_text: str) -> list[tuple[CaseRecord, float]]:
+        """AI 报价模式的相似案例检索：不做项目类型过滤，与原型 search_similar_cases 一致。"""
+        if self.rag is None:
+            return []
+        try:
+            cases = self.rag.search(query_text, top_k=3)
+            self.cache.audit(task_id, "retrieved_cases", f"RAG hit {len(cases)} cases")
+            return cases
+        except Exception as exc:
+            # RAG 故障不阻塞任务
+            self.cache.audit(task_id, "retrieved_cases", f"RAG unavailable: {sanitize_message(str(exc))}")
+            return []
 
     # ---- QRS 规则模板引擎（PRICING_MODE=qrs，保留）----
 
@@ -412,12 +416,9 @@ def build_result(
 
 def build_ai_quote_result(
     task: ClaimedTask,
-    requirement: ProjectRequirement,
-    classification,
     evaluation: AiQuoteEvaluation,
     pricing,
     settings: WorkerSettings,
-    missing_key_fields: list[str],
     image_summary: str,
     similar_cases: list[dict],
     project_type: str,
@@ -441,35 +442,38 @@ def build_ai_quote_result(
             "project_type": project_type,
             "category": category,
             "category_name": category_name,
-            "completeness_score": requirement.completeness_score,
-            "classification_confidence": float(
-                classification.confidence if classification.confidence is not None else 0.5
-            ),
+            # 与 AI_quote 原型一致：不评估完整度、不做分类，始终输出价格
+            "completeness_score": None,
+            "classification_confidence": None,
             "estimated_hours": {"total": evaluation.estimated_hours},
             "price": pricing.price,
             "manual_review_required": pricing.manual_review_required,
             "manual_review_reasons": list(pricing.review_reasons),
-            "missing_information": sorted(set(missing_key_fields) | set(requirement.unknowns)),
-            "assumptions": requirement.assumptions,
-            "exclusions": requirement.exclusions,
-            "clarification_questions": requirement.clarification_questions,
+            "missing_information": [],
+            "assumptions": [],
+            "exclusions": [],
+            "clarification_questions": [],
             "reviewer_notes": [],
             "calculation_snapshot": snapshot,
         },
     }
 
 
-def _requirement_text(form: dict, requirement: ProjectRequirement) -> str:
+def _prototype_requirement_text(form: dict, parsed: list[ParsedFile]) -> str:
     """拼装喂给 AI 评估提示词的需求文本（原型 main.py 的 requirement_text）。"""
     parts = []
     if form.get("project_name"):
         parts.append(f"项目名称：{form['project_name']}")
     if form.get("customer_description"):
         parts.append(f"客户需求：{form['customer_description']}")
-    if requirement.function_description:
-        parts.append(f"功能描述：{requirement.function_description}")
-    if requirement.provided_materials:
-        parts.append("提供资料：" + "、".join(requirement.provided_materials))
+    file_texts = []
+    for pf in parsed:
+        if pf.text:
+            file_texts.append(f"{pf.original_name}：{pf.text[:2000]}")
+        elif pf.table_summary:
+            file_texts.append(f"{pf.original_name}：{pf.table_summary}")
+    if file_texts:
+        parts.append("附件内容：" + "\n".join(file_texts)[:8000])
     return "\n".join(parts) or "（无文字需求）"
 
 

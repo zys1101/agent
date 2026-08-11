@@ -463,6 +463,12 @@ AI 报价模式（`calculation_snapshot.engine = "ai_quote"`）的 `complete` �
 - `project_type` 可能是业务大类 key（`mechanism_design`、`drawing_modeling` 等），不再是纯 `project_types` 枚举；
 - `estimated_hours.total` 允许小数（如 0.5、2.5）。
 
+AI 报价模式与原型一致，**不做需求完整度评估、不做项目分类**：
+
+- `result.completeness_score`、`result.classification_confidence` 为 `null`；
+- `result.missing_information`、`result.clarification_questions` 为空数组；
+- **始终输出价格**：`price.recommended` 非空（金额 < 0.60 完整度等概念在 AI 报价模式不适用）。
+
 `result.schema.ts`（ajv）需允许上述字段，否则 Worker 回传会被 422 拒绝。
 
 ### 12.2 附件下载 URL 必须 HTTPS
