@@ -35,6 +35,14 @@
 - ReviewAgent（`src/quote_agent/review.py`）：LLM 审核助手，只能增加审核项与意见，不得修改价格/工时/系数；RAG 检索结果作为审核上下文。
 - `scripts/seed_rag_cases.py`：把 `examples/knowledge_cases/*.json` 写入向量库。
 
+## 当前里程碑（M5）
+
+- 需求级 LLM 缓存（`src/quote_agent/llm.py` 的 `CachedLLM`）：按“system+user+模型+schema+图片内容”哈希，命中直接复用，避免重复推理；缓存表为 SQLite 的 `llm_cache`（`LLM_CACHE_ENABLED` 可关）。
+- 模型分派（`src/quote_agent/llm.py`）：带图片任务用视觉模型（`OLLAMA_MODEL`），纯文本任务用轻量文本模型（`TEXT_MODEL`）；提取 prompt 增加单任务正文上限，防大文件拖慢推理。
+- LLM 提速：默认关闭 qwen3 thinking（`LLM_THINK=false`）、结构化输出强制 `format=json`、`LLM_MAX_TOKENS` 限制输出长度；图片转录合并进提取（少一次调用）。
+- 审核按需（`src/quote_agent/worker.py`）：仅规则引擎判定需人工审核时才跑 LLM 审核，其余任务跳过（省一次慢调用）。
+- 并行化（`src/quote_agent/worker.py`）：文件下载/解析并行；分类 LLM 与 RAG 检索并行；各阶段耗时写入审计日志。
+
 ### M4 运行方式
 
 ```powershell

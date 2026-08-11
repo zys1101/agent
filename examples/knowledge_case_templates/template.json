@@ -1,0 +1,10 @@
+{
+  "case_id": "case_xxx",
+  "project_type": "pneumatic_press_fixture",
+  "category": "tooling_fixture",
+  "summary": "一句话描述项目背景、结构与交付要点；这是向量检索的主要匹配文本，建议 50-200 字并写清关键词",
+  "deliverables": ["three_d_assembly", "two_d_part_drawing", "bom"],
+  "risk_notes": ["压装力必须开工前确认，缺失时先给澄清问题"],
+  "typical_hours": 156,
+  "price_range_cny": [48000, 65000]
+}

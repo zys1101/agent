@@ -48,6 +48,17 @@ class QuoteCache:
                 )
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS llm_cache (
+                    key        TEXT PRIMARY KEY,
+                    model      TEXT NOT NULL,
+                    schema     TEXT NOT NULL,
+                    payload    TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
 
     # ---- 待回传结果 ----
 
@@ -104,3 +115,36 @@ class QuoteCache:
             {"ts": ts, "task_id": task_id, "stage": stage, "message": message}
             for ts, task_id, stage, message in rows
         ]
+
+    # ---- LLM 结果缓存 ----
+
+    def get_llm_cache(self, key: str) -> str | None:
+        with self._lock, sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT payload FROM llm_cache WHERE key = ?",
+                (key,),
+            ).fetchone()
+        return row[0] if row else None
+
+    def set_llm_cache(self, key: str, model: str, schema: str, payload: str) -> None:
+        with self._lock, sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """
+                INSERT INTO llm_cache (key, model, schema, payload, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(key) DO UPDATE SET
+                    model = excluded.model,
+                    schema = excluded.schema,
+                    payload = excluded.payload,
+                    created_at = excluded.created_at
+                """,
+                (key, model, schema, payload, _now()),
+            )
+
+    def delete_llm_cache(self, key: str) -> None:
+        with self._lock, sqlite3.connect(self.db_path) as conn:
+            conn.execute("DELETE FROM llm_cache WHERE key = ?", (key,))
+
+    def count_llm_cache(self) -> int:
+        with self._lock, sqlite3.connect(self.db_path) as conn:
+            return conn.execute("SELECT COUNT(*) FROM llm_cache").fetchone()[0]

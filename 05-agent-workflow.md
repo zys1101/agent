@@ -114,6 +114,9 @@ def run_task(task):
 4. `completeness_score` 必须由本地确定性算法重算，不能直接相信模型值。
 5. 任何 `unknown` 的关键字段都必须转化为客户澄清问题或人工审核原因。
 
+> **提速说明**：LLM 审核（REVIEW_QUOTE）仅在规则引擎判定 `manual_review_required=true` 时执行；
+> 引擎未判定审核的任务直接跳过 LLM 审核，避免一次不必要的慢调用。
+
 ## 5. LLM 调用策略
 
 | 参数 | MVP 值 | 原因 |

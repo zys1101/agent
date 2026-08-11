@@ -64,6 +64,20 @@ class ProjectRequirement(BaseModel):
             return NULL_DEFAULTS[info.field_name]
         return value
 
+    @field_validator("evidence", mode="before")
+    @classmethod
+    def _coerce_evidence_strings(cls, value):
+        """模型偶尔把 evidence 输出为纯字符串（如附件名），容错为仅含 source_file 的记录。"""
+        if not isinstance(value, list):
+            return value
+        coerced = []
+        for item in value:
+            if isinstance(item, str):
+                coerced.append({"field": "", "source_file": item, "value": ""})
+            else:
+                coerced.append(item)
+        return coerced
+
     project_type_candidate: str
     requested_deliverables: list[str | DeliverableRequest] = []
     deadline_workdays: float | None = None
@@ -120,7 +134,7 @@ class ClassificationCandidate(BaseModel):
 
 
 class ProjectClassification(BaseModel):
-    project_type: str
+    project_type: str = ""
     confidence: float | None = Field(default=None, ge=0, le=1)
     category: str | None = Field(default=None, description="业务大类 key，来自 rules.case_categories")
     candidates: list[ClassificationCandidate] = []

@@ -20,6 +20,10 @@ class ImageTranscripts(BaseModel):
     files: list[ImageTranscript]
 
 
+# 单任务正文总上限：防止多文件/大文件把 prompt 撑爆导致推理变慢（C 项提速）
+MAX_PROMPT_CHARS = 12_000
+
+
 def _enums(rules: QuoteRules) -> str:
     types = ", ".join(rules.project_types)
     deliverables = ", ".join(rules.deliverables)
@@ -40,14 +44,28 @@ def _build_prompt(rules: QuoteRules, form: dict, parsed: list[ParsedFile]) -> st
     sections.append(f"期望交期: {form.get('deadline_date', '')}")
     sections.append(f"要求交付物: {form.get('requested_deliverables', [])}")
     sections.append("# 文件内容")
+    budget = MAX_PROMPT_CHARS
+    truncated = False
     for pf in parsed:
         sections.append(f"## {pf.original_name} ({pf.mime_type})")
         if pf.text:
-            sections.append(pf.text[:12_000])
+            if budget > 0:
+                text = pf.text[:budget]
+                budget -= len(text)
+                sections.append(text)
+                if len(pf.text) > len(text):
+                    truncated = True
+            else:
+                truncated = True
         if pf.table_summary:
             sections.append(f"表格摘要: {pf.table_summary}")
         if pf.ocr_pending:
             sections.append("[图片内容暂不可读，需向客户补充询问]")
+    if truncated:
+        sections.append(
+            f"[注意：文件内容过长已截断（单任务正文上限 {MAX_PROMPT_CHARS} 字符），"
+            "如需完整信息请后续人工补充]"
+        )
     return "\n\n".join(sections)
 
 
@@ -85,13 +103,6 @@ assumptions, exclusions, clarification_questions, evidence
                 f"\n\n说明：随附 {len(images)} 张图片。请先阅读图片内容，"
                 "把图片中出现的尺寸、数量、精度、材料、结构等关键信息纳入提取结果。"
             )
-            transcripts = self._transcribe_images(images)
-            if transcripts is not None and transcripts.files:
-                lines = [
-                    f"- {t.original_name}: {t.summary}；关键事实：{'；'.join(t.key_facts)}"
-                    for t in transcripts.files
-                ]
-                user += "\n\n图片转录结果（供你直接引用，无需再向客户索要）：\n" + "\n".join(lines)
         result = self.llm.generate_structured(
             self.SYSTEM_PROMPT,
             user,
@@ -103,19 +114,3 @@ assumptions, exclusions, clarification_questions, evidence
         if not result.provided_materials:
             result.provided_materials = [pf.original_name for pf in parsed if pf.original_name]
         return result
-
-    def _transcribe_images(self, images: list[str]) -> ImageTranscripts | None:
-        try:
-            result = self.llm.generate_structured(
-                "你是机械设计图纸/照片的图片阅读助手。逐字转录图片中的文字，并提取关键事实（尺寸、数量、精度、材料、结构）。",
-                "请阅读随附图片，输出 JSON："
-                '{"files": [{"original_name": "...", "summary": "...", "key_facts": ["..."]}]}。'
-                "图片文字不确定时在 key_facts 中标注不确定。",
-                ImageTranscripts,
-                images=images,
-            )
-            assert isinstance(result, ImageTranscripts)
-            return result
-        except Exception:
-            # 转录失败不阻塞：图片仍随提取请求直接传给模型
-            return None

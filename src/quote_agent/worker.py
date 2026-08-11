@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -18,8 +20,8 @@ from .completeness import apply_deterministic_overrides
 from .config import QuoteRules
 from .extraction import ExtractionAgent
 from .file_parser import FileParser, ParsedFile
-from .llm import LLM, LLMOutputError, LLMUnavailableError
-from .models import ProjectRequirement
+from .llm import CachedLLM, LLM, LLMOutputError, LLMUnavailableError
+from .models import ProjectRequirement, ReviewLLMOutput
 from .quote_engine import QuoteEngine
 from .rag import CaseRecord, RagStore
 from .review import ReviewAgent
@@ -33,6 +35,7 @@ class WorkerSettings(BaseModel):
     sqlite_path: Path = Path("data/agent.db")
     ollama_model: str = "qwen3-vl:8b"
     rag_enabled: bool = False
+    llm_cache_enabled: bool = True
     prompt_versions: dict[str, str] = {
         "requirement_extraction": "v1",
         "classification": "v1",
@@ -51,6 +54,7 @@ class WorkerSettings(BaseModel):
             sqlite_path=Path(env.get("SQLITE_PATH", "data/agent.db")),
             ollama_model=env.get("OLLAMA_MODEL", cls.model_fields["ollama_model"].default),
             rag_enabled=env.get("RAG_ENABLED", "false").strip().lower() in ("1", "true", "yes"),
+            llm_cache_enabled=env.get("LLM_CACHE_ENABLED", "true").strip().lower() in ("1", "true", "yes"),
         )
 
 
@@ -73,31 +77,56 @@ class Worker:
         self.parser = parser or FileParser()
         self.cache = QuoteCache(settings.sqlite_path)
         self.rag = rag
-        self.review_agent = ReviewAgent(llm, rules)
 
     def run_task(self, task: ClaimedTask) -> dict:
         pending = self.cache.pending_for(task.task_id)
         if pending is not None:
             # 断网期间已完成但未回传：任务重新投递后直接重传（AWF §7），不重复报价
-            resp = self.cloud.complete(task.task_id, task.lease_token, pending)
-            self.cache.delete_pending(task.task_id)
-            self.cache.audit(task.task_id, "reuploaded", "pending result uploaded after recovery")
-            pending["_cloud"] = resp
-            return pending
+            try:
+                resp = self.cloud.complete(task.task_id, task.lease_token, pending)
+            except CloudError as exc:
+                if exc.status == 422 or "SCHEMA" in str(exc).upper():
+                    # 旧 pending 结构被云端拒绝（如 classification_confidence=null）：作废后重新报价
+                    self.cache.delete_pending(task.task_id)
+                    self.cache.audit(
+                        task.task_id,
+                        "pending_discarded",
+                        f"payload schema invalid, reprocessing: {sanitize_message(str(exc))}",
+                    )
+                else:
+                    raise
+            else:
+                self.cache.delete_pending(task.task_id)
+                self.cache.audit(task.task_id, "reuploaded", "pending result uploaded after recovery")
+                pending["_cloud"] = resp
+                return pending
 
         workdir = self.settings.work_dir / task.task_id
         workdir.mkdir(parents=True, exist_ok=True)
         result: dict | None = None
+        llm = CachedLLM(self.llm, self.cache) if self.settings.llm_cache_enabled else self.llm
         try:
             self.cache.audit(task.task_id, "claimed", "task claimed")
+            t_parse = time.perf_counter()
             downloaded = self._download(task, workdir)
             parsed = self._parse(downloaded)
-            requirement = ExtractionAgent(self.llm, self.rules).extract(task.customer_form, parsed)
+            self.cache.audit(task.task_id, "parsed", f"files={len(parsed)} in {time.perf_counter() - t_parse:.2f}s")
+            t_extract = time.perf_counter()
+            requirement = ExtractionAgent(llm, self.rules).extract(task.customer_form, parsed)
+            self.cache.audit(task.task_id, "extracted", f"in {time.perf_counter() - t_extract:.2f}s")
             completeness = apply_deterministic_overrides(requirement, self.rules)
-            classification = ClassificationAgent(self.llm, self.rules).classify(requirement, parsed)
-            rag_cases = self._retrieve_cases(task.task_id, requirement, classification)
+            classification, rag_cases = self._classify_and_retrieve(task.task_id, llm, requirement, parsed)
+            t_calc = time.perf_counter()
             calc = self.engine.calculate(requirement, classification)
-            review = self.review_agent.review(requirement, classification, calc, rag_cases)
+            self.cache.audit(task.task_id, "calculated", f"in {time.perf_counter() - t_calc:.3f}s")
+            if calc.manual_review_required:
+                t_review = time.perf_counter()
+                review = ReviewAgent(llm, self.rules).review(requirement, classification, calc, rag_cases)
+                self.cache.audit(task.task_id, "reviewed", f"in {time.perf_counter() - t_review:.2f}s")
+            else:
+                # 引擎判定无需人工审核时跳过 LLM 审核，减少一次慢调用（提速）
+                review = ReviewLLMOutput(reviewer_notes=[], extra_review_reasons=[])
+                self.cache.audit(task.task_id, "reviewed", "skipped (no manual review required)")
 
             result = build_result(
                 task=task,
@@ -140,8 +169,7 @@ class Worker:
     # ---- 内部 ----
 
     def _download(self, task: ClaimedTask, workdir: Path) -> list[tuple[Any, Path]]:
-        paths = []
-        for file in task.files:
+        def fetch(file) -> tuple[Any, Path]:
             target = workdir / f"{file.file_id}_{sanitize_name(file.original_name)}"
             if file.local_path:
                 shutil.copyfile(file.local_path, target)
@@ -151,21 +179,47 @@ class Worker:
                 target.write_bytes(resp.content)
             else:
                 raise ValueError(f"file {file.file_id} has neither local_path nor download_url")
-            paths.append((file, target))
-        return paths
+            return (file, target)
+
+        workers = min(4, max(len(task.files), 1))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            return list(pool.map(fetch, task.files))
 
     def _parse(self, downloaded: list[tuple[Any, Path]]) -> list[ParsedFile]:
-        parsed = []
-        for file, path in downloaded:
-            parsed.append(
-                self.parser.parse(
-                    path,
-                    file_id=file.file_id,
-                    original_name=file.original_name,
-                    mime_type=file.mime_type,
-                )
+        def do(item) -> ParsedFile:
+            file, path = item
+            return self.parser.parse(
+                path,
+                file_id=file.file_id,
+                original_name=file.original_name,
+                mime_type=file.mime_type,
             )
-        return parsed
+
+        workers = min(4, max(len(downloaded), 1))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            return list(pool.map(do, downloaded))
+
+    def _classify_and_retrieve(
+        self,
+        task_id: str,
+        llm: LLM,
+        requirement: ProjectRequirement,
+        parsed: list[ParsedFile],
+    ) -> tuple[object, list]:
+        """分类 LLM 与 RAG 检索并行执行（B 项提速）。"""
+        t0 = time.perf_counter()
+        classifier = ClassificationAgent(llm, self.rules)
+        if self.rag is None:
+            classification = classifier.classify(requirement, parsed)
+            self.cache.audit(task_id, "classified", f"in {time.perf_counter() - t0:.2f}s")
+            return classification, []
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            classify_future = pool.submit(classifier.classify, requirement, parsed)
+            retrieve_future = pool.submit(self._retrieve_cases, task_id, requirement, None)
+            classification = classify_future.result()
+            rag_cases = retrieve_future.result()
+        self.cache.audit(task_id, "classified", f"in {time.perf_counter() - t0:.2f}s（分类与RAG检索并行）")
+        return classification, rag_cases
 
     def _save_snapshot(self, task_id: str, result: dict) -> None:
         self.settings.snapshot_dir.mkdir(parents=True, exist_ok=True)
@@ -178,16 +232,26 @@ class Worker:
         self,
         task_id: str,
         requirement: ProjectRequirement,
-        classification,
+        classification=None,
     ) -> list[tuple[CaseRecord, float]]:
         if self.rag is None:
             return []
+        project_type = (
+            classification.project_type
+            if classification is not None
+            else requirement.project_type_candidate
+        )
+        category = (
+            classification.category
+            if classification is not None
+            else self.rules.category_of(project_type)
+        )
         try:
-            query = f"{requirement.function_description or ''} {requirement.project_type_candidate}".strip()
+            query = f"{requirement.function_description or ''} {project_type}".strip()
             cases = self.rag.search(
                 query,
-                project_type=classification.project_type,
-                category=classification.category,
+                project_type=project_type,
+                category=category,
                 top_k=3,
             )
             self.cache.audit(task_id, "retrieved_cases", f"RAG hit {len(cases)} cases")
@@ -249,7 +313,9 @@ def build_result(
             "category": calc.category,
             "category_name": calc.category_name,
             "completeness_score": requirement.completeness_score,
-            "classification_confidence": classification.confidence,
+            "classification_confidence": float(
+                classification.confidence if classification.confidence is not None else 0.5
+            ),
             "estimated_hours": {"total": calc.estimated_hours.total},
             "price": price,
             "manual_review_required": manual_review_required,

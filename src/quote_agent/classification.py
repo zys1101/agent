@@ -37,11 +37,18 @@ class ClassificationAgent:
             f"业务大类枚举：{categories}\n"
             f"可用 project_type 枚举（箭头后为所属业务大类）：{mapping}\n"
             "先判断项目最匹配的业务大类 category，再在该大类下选择最具体的 project_type。\n"
-            "输出 JSON：{'category': '...', 'project_type': '...', 'confidence': 0.0-1.0, "
-            "'candidates': [{'project_type': '...', 'confidence': 0.0-1.0}]}"
+            "输出的是分类结果对象，不是需求对象；不要输出 project_type_candidate 等需求字段。\n"
+            "输出 JSON 示例：{'category': 'tooling_fixture', 'project_type': 'pneumatic_press_fixture', "
+            "'confidence': 0.9, 'candidates': [{'project_type': 'assembly_fixture', 'confidence': 0.7}]}"
         )
         result = self.llm.generate_structured(self.SYSTEM_PROMPT, user, ProjectClassification)
         assert isinstance(result, ProjectClassification)
+        # 兜底：模型偶发输出需求对象（含 project_type_candidate 但缺 project_type）时回退
+        if not result.project_type:
+            result.project_type = requirement.project_type_candidate
+        # 兜底：模型缺失 confidence 时给保守默认值 0.5（低于人工审核阈值 0.75，宁严勿松）
+        if result.confidence is None:
+            result.confidence = 0.5
         # 兼容旧模型输出：未给 category 或给了无效 key 时，按 project_type 归属推导
         if result.category not in self.rules.case_categories:
             result.category = self.rules.category_of(result.project_type) or None

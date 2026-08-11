@@ -55,12 +55,17 @@ class RagStore:
         cls,
         embed_fn: EmbedFn | None = None,
         env: dict | None = None,
+        *,
+        collection: str | None = None,
+        dim: int | None = None,
     ) -> "RagStore":
         env = env or os.environ
         return cls(
             host=env.get("QDRANT_HOST", "127.0.0.1"),
             port=int(env.get("QDRANT_PORT", "6333")),
+            collection=collection or env.get("QDRANT_COLLECTION", "quote_cases"),
             embed_fn=embed_fn,
+            dim=dim or int(env.get("EMBED_DIM", "1024")),
         )
 
     def _default_embed(self, texts: list[str]) -> list[list[float]]:
@@ -74,21 +79,25 @@ class RagStore:
                 vectors_config=VectorParams(size=dim, distance=Distance.COSINE),
             )
 
-    def upsert_cases(self, cases: list[CaseRecord]) -> int:
+    def upsert_cases(self, cases: list[CaseRecord], batch_size: int = 64) -> int:
         if not cases:
             return 0
-        texts = [case.summary for case in cases]
-        vectors = self.embed_fn(texts)
-        points = [
-            PointStruct(
-                id=_stable_id(case.case_id),
-                vector=vector,
-                payload=case.model_dump(mode="json"),
-            )
-            for case, vector in zip(cases, vectors)
-        ]
-        self.client.upsert(collection_name=self.collection, points=points)
-        return len(points)
+        total = 0
+        for start in range(0, len(cases), batch_size):
+            chunk = cases[start : start + batch_size]
+            texts = [case.summary for case in chunk]
+            vectors = self.embed_fn(texts)
+            points = [
+                PointStruct(
+                    id=_stable_id(case.case_id),
+                    vector=vector,
+                    payload=case.model_dump(mode="json"),
+                )
+                for case, vector in zip(chunk, vectors)
+            ]
+            self.client.upsert(collection_name=self.collection, points=points)
+            total += len(points)
+        return total
 
     def search(
         self,

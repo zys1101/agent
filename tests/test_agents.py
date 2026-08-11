@@ -4,7 +4,7 @@ import pytest
 
 from quote_agent.classification import ClassificationAgent
 from quote_agent.config import QuoteRules
-from quote_agent.extraction import ExtractionAgent, ImageTranscript, ImageTranscripts
+from quote_agent.extraction import ExtractionAgent, ImageTranscript, ImageTranscripts, MAX_PROMPT_CHARS
 from quote_agent.file_parser import ParsedFile
 from quote_agent.models import ProjectClassification, ProjectRequirement
 
@@ -98,6 +98,17 @@ def test_classification_prompt_contains_category_taxonomy(rules: QuoteRules, mon
     assert "assembly_fixture->tooling_fixture" in captured["user"]
 
 
+def test_classification_missing_confidence_defaults_conservative(rules: QuoteRules):
+    fake = FakeLLM(
+        extraction={"project_type_candidate": "x", "completeness_score": 0.5},
+        classification={"project_type": "welding_fixture"},  # 模型未给 confidence
+    )
+    agent = ClassificationAgent(fake, rules)
+    result = agent.classify(ProjectRequirement(project_type_candidate="x", completeness_score=0.5), [])
+    assert result.confidence == 0.5
+    assert result.category == "tooling_fixture"
+
+
 def test_extraction_prompt_contains_enums(rules: QuoteRules, monkeypatch):
     captured = {}
 
@@ -111,6 +122,34 @@ def test_extraction_prompt_contains_enums(rules: QuoteRules, monkeypatch):
     assert "pneumatic_press_fixture" in captured["user"]
     assert "two_d_part_drawing" in captured["user"]
     assert "high_precision" in captured["user"]
+
+
+def test_extraction_prompt_caps_total_file_text(rules: QuoteRules):
+    captured = {}
+
+    class CallableLLM:
+        def generate_structured(self, system, user, model_cls, images=None):
+            captured["user"] = user
+            return ProjectRequirement(project_type_candidate="simple_part", completeness_score=0.9)
+
+    agent = ExtractionAgent(CallableLLM(), rules)
+    big = ParsedFile(file_id="f1", original_name="big.txt", mime_type="text/plain", text="机" * 100_000)
+    agent.extract({}, [big])
+    assert len(captured["user"]) < MAX_PROMPT_CHARS + 5_000
+    assert "已截断" in captured["user"]
+
+
+def test_requirement_evidence_strings_coerced():
+    req = ProjectRequirement.model_validate(
+        {
+            "project_type_candidate": "simple_part",
+            "completeness_score": 0.9,
+            "evidence": ["req.txt", {"field": "precision", "source_file": "a.pdf", "value": "0.05"}],
+        }
+    )
+    assert req.evidence[0].source_file == "req.txt"
+    assert req.evidence[0].field == ""
+    assert req.evidence[1].field == "precision"
 
 
 def test_extraction_passes_image_paths_to_llm(rules: QuoteRules):
