@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from pydantic import BaseModel
+
 from .ai_quote import (
     AiQuoteEvaluation,
     AiQuoteRules,
@@ -69,12 +71,33 @@ PROMPT_EVALUATION = """你是一位经验丰富的机械设计师，正在评估
 只输出JSON，不要输出其他任何内容。"""
 
 
+class ImageSummary(BaseModel):
+    """图片理解步骤的结构化输出（原型 PROMPT_IMAGE_DESC 的 JSON 包装）。"""
+
+    summary: str
+
+
 class AiQuoteEvaluator:
     """调用 LLM 生成 AiQuoteEvaluation，并做系统级强制覆盖。"""
 
     def __init__(self, llm: LLM, rules: AiQuoteRules):
         self.llm = llm
         self.rules = rules
+
+    def summarize_images(self, requirement_text: str, images: list[str]) -> str:
+        """步骤 1：让视觉模型理解需求图片，返回文字总结（复刻原型）。"""
+        prompt = (
+            PROMPT_IMAGE_DESC.format(requirement_text=requirement_text)
+            + '\n\n只输出 JSON：{"summary": "你的描述"}'
+        )
+        result = self.llm.generate_structured(
+            "你是机械设计报价系统的图片理解助手。只输出合法 JSON 对象。",
+            prompt,
+            ImageSummary,
+            images=images,
+        )
+        assert isinstance(result, ImageSummary)
+        return result.summary.strip() or "有图片但未能提取有效描述"
 
     def build_evaluation_prompt(
         self,

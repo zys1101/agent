@@ -43,6 +43,13 @@
 - 审核按需（`src/quote_agent/worker.py`）：仅规则引擎判定需人工审核时才跑 LLM 审核，其余任务跳过（省一次慢调用）。
 - 并行化（`src/quote_agent/worker.py`）：文件下载/解析并行；分类 LLM 与 RAG 检索并行；各阶段耗时写入审计日志。
 
+## AI 报价模式（默认，原型法）
+
+- Worker 默认以 `PRICING_MODE=ai_quote` 运行：LLM 只评估工时/复杂度/加急/交付物（提示词含参考价格表），价格由 `src/quote_agent/ai_quote.py` 按 `工时 × 50元/h × 复杂度系数 × 加急系数 [+ 交付物单价]` 确定性计算，加急等级由系统按交期判定并覆盖。
+- 相似历史案例（`examples/knowledge_cases/`，含 14 条脱敏真实成交案例）通过 Qdrant RAG 检索后拼入评估提示词（需 `RAG_ENABLED=true`）。
+- 旧的 QRS 规则模板引擎保留为 `PRICING_MODE=qrs`（费率卡 180–650 元/h，量级与原型法不同，仅作对比/回退）。
+- 对接与参数见 [14-ai-quote-method-handoff.md](14-ai-quote-method-handoff.md)。
+
 ### M4 运行方式
 
 ```powershell

@@ -87,6 +87,7 @@ def _make_worker(tmp_path, store):
         work_dir=tmp_path / "incoming",
         snapshot_dir=tmp_path / "snapshots",
         sqlite_path=tmp_path / "agent.db",
+        pricing_mode="qrs",
     )
     worker = Worker(
         cloud=CloudClient("http://unused", "t", "test-agent"),
@@ -203,6 +204,7 @@ def test_worker_passes_images_to_extraction(tmp_path):
             work_dir=tmp_path / "incoming",
             snapshot_dir=tmp_path / "snapshots",
             sqlite_path=tmp_path / "agent.db",
+            pricing_mode="qrs",
         )
         fake_llm = FakeLLM()
         worker = Worker(

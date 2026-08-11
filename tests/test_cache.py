@@ -120,6 +120,7 @@ def _task(tmp_path) -> tuple[ClaimedTask, WorkerSettings]:
         work_dir=tmp_path / "incoming",
         snapshot_dir=tmp_path / "snapshots",
         sqlite_path=tmp_path / "agent.db",
+        pricing_mode="qrs",
     )
     return task, settings
 

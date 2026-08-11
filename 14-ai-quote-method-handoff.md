@@ -427,6 +427,8 @@ expect(calculatePrice({ estimated_hours: 2.5, complexity_tier: 'complex', urgenc
 | `scripts/run_ai_quote.py` | 本地演示脚本（Ollama 可用时可全流程跑通） |
 | `tests/test_ai_quote.py` | 34 个单元测试（公式、边界、覆盖逻辑、确定性） |
 
+> 本分支的本地 Worker 已接入该方法：`PRICING_MODE=ai_quote`（默认）时，Worker 主流程走"图片理解 → 系统判定加急 → LLM 综合评估 → AiQuotePricing 算价"；`PRICING_MODE=qrs` 可回退旧规则模板引擎。
+
 ### 10.1 本地演示
 
 ```powershell

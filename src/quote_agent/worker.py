@@ -7,12 +7,15 @@ import os
 import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor
+from datetime import date
 from pathlib import Path
 from typing import Any
 
 import httpx
 from pydantic import BaseModel
 
+from .ai_evaluator import AiQuoteEvaluator
+from .ai_quote import AiQuoteEvaluation, AiQuotePricing, AiQuoteRules
 from .cache import QuoteCache
 from .classification import ClassificationAgent
 from .cloud import ClaimedTask, CloudClient, CloudError
@@ -36,6 +39,9 @@ class WorkerSettings(BaseModel):
     ollama_model: str = "qwen3-vl:8b"
     rag_enabled: bool = False
     llm_cache_enabled: bool = True
+    # ai_quote = AI 报价方法（原型：LLM 估工时，代码按 50元/h 算价）；
+    # qrs = QRS 规则模板引擎（保留，供对比/回退）
+    pricing_mode: str = "ai_quote"
     prompt_versions: dict[str, str] = {
         "requirement_extraction": "v1",
         "classification": "v1",
@@ -55,6 +61,7 @@ class WorkerSettings(BaseModel):
             ollama_model=env.get("OLLAMA_MODEL", cls.model_fields["ollama_model"].default),
             rag_enabled=env.get("RAG_ENABLED", "false").strip().lower() in ("1", "true", "yes"),
             llm_cache_enabled=env.get("LLM_CACHE_ENABLED", "true").strip().lower() in ("1", "true", "yes"),
+            pricing_mode=env.get("PRICING_MODE", "ai_quote").strip().lower(),
         )
 
 
@@ -111,33 +118,10 @@ class Worker:
             downloaded = self._download(task, workdir)
             parsed = self._parse(downloaded)
             self.cache.audit(task.task_id, "parsed", f"files={len(parsed)} in {time.perf_counter() - t_parse:.2f}s")
-            t_extract = time.perf_counter()
-            requirement = ExtractionAgent(llm, self.rules).extract(task.customer_form, parsed)
-            self.cache.audit(task.task_id, "extracted", f"in {time.perf_counter() - t_extract:.2f}s")
-            completeness = apply_deterministic_overrides(requirement, self.rules)
-            classification, rag_cases = self._classify_and_retrieve(task.task_id, llm, requirement, parsed)
-            t_calc = time.perf_counter()
-            calc = self.engine.calculate(requirement, classification)
-            self.cache.audit(task.task_id, "calculated", f"in {time.perf_counter() - t_calc:.3f}s")
-            if calc.manual_review_required:
-                t_review = time.perf_counter()
-                review = ReviewAgent(llm, self.rules).review(requirement, classification, calc, rag_cases)
-                self.cache.audit(task.task_id, "reviewed", f"in {time.perf_counter() - t_review:.2f}s")
+            if self.settings.pricing_mode == "ai_quote":
+                result = self._run_ai_quote_pipeline(task, llm, parsed)
             else:
-                # 引擎判定无需人工审核时跳过 LLM 审核，减少一次慢调用（提速）
-                review = ReviewLLMOutput(reviewer_notes=[], extra_review_reasons=[])
-                self.cache.audit(task.task_id, "reviewed", "skipped (no manual review required)")
-
-            result = build_result(
-                task=task,
-                requirement=requirement,
-                classification=classification,
-                calc=calc,
-                settings=self.settings,
-                missing_key_fields=completeness.missing_key_fields,
-                review=review,
-                rag_cases=rag_cases,
-            )
+                result = self._run_qrs_pipeline(task, llm, parsed)
             self._save_snapshot(task.task_id, result)
             self.cache.save_pending(task.task_id, result)
             complete_resp = self.cloud.complete(task.task_id, task.lease_token, result)
@@ -221,6 +205,101 @@ class Worker:
             rag_cases = retrieve_future.result()
         self.cache.audit(task_id, "classified", f"in {time.perf_counter() - t0:.2f}s（分类与RAG检索并行）")
         return classification, rag_cases
+
+    # ---- AI 报价方法（原型：AI 定性，代码定量）----
+
+    def _run_ai_quote_pipeline(self, task: ClaimedTask, llm: LLM, parsed: list[ParsedFile]) -> dict:
+        ai_rules = AiQuoteRules.load()
+
+        # 1. 提取结构化需求：只用于完整度、澄清问题与交期；价格不经过它
+        t_extract = time.perf_counter()
+        requirement = ExtractionAgent(llm, self.rules).extract(task.customer_form, parsed)
+        self.cache.audit(task.task_id, "extracted", f"in {time.perf_counter() - t_extract:.2f}s")
+        completeness = apply_deterministic_overrides(requirement, self.rules)
+
+        # 2. 分类 + RAG 检索相似案例（并行）
+        classification, rag_cases = self._classify_and_retrieve(task.task_id, llm, requirement, parsed)
+        similar_cases = _format_similar_cases(rag_cases)
+
+        # 3. 图片理解（原型步骤 1：视觉模型总结图片）
+        image_paths = [pf.image_path for pf in parsed if pf.image_path and not pf.errors]
+        requirement_text = _requirement_text(task.customer_form, requirement)
+        evaluator = AiQuoteEvaluator(llm, ai_rules)
+        image_summary = "无图片"
+        if image_paths:
+            t_img = time.perf_counter()
+            image_summary = evaluator.summarize_images(requirement_text, image_paths)
+            self.cache.audit(task.task_id, "image_summarized", f"in {time.perf_counter() - t_img:.2f}s")
+
+        # 4. 综合评估（原型步骤 4：参考价格表 + 需求 + 图片总结 + 相似案例）
+        delivery_days = requirement.deadline_workdays
+        if delivery_days is None:
+            delivery_days = _days_until_deadline(task.customer_form.get("deadline_date"))
+        t_eval = time.perf_counter()
+        evaluation = evaluator.evaluate(
+            requirement_text=requirement_text,
+            image_summary=image_summary,
+            similar_cases=similar_cases,
+            delivery_days=delivery_days,
+            is_urgent=False,
+            images=image_paths or None,
+        )
+        self.cache.audit(task.task_id, "evaluated", f"in {time.perf_counter() - t_eval:.2f}s")
+
+        # 5. 确定性算价（唯一计算价格的地方）
+        t_calc = time.perf_counter()
+        pricing = AiQuotePricing(ai_rules).calculate(
+            evaluation,
+            completeness_score=requirement.completeness_score,
+        )
+        self.cache.audit(task.task_id, "calculated", f"in {time.perf_counter() - t_calc:.3f}s")
+
+        project_type = classification.project_type or evaluation.project_category
+        category = classification.category or self.rules.category_of(project_type)
+        return build_ai_quote_result(
+            task=task,
+            requirement=requirement,
+            classification=classification,
+            evaluation=evaluation,
+            pricing=pricing,
+            settings=self.settings,
+            missing_key_fields=completeness.missing_key_fields,
+            image_summary=image_summary,
+            similar_cases=similar_cases,
+            project_type=project_type,
+            category=category,
+            category_name=self.rules.category_name_of(category),
+        )
+
+    # ---- QRS 规则模板引擎（PRICING_MODE=qrs，保留）----
+
+    def _run_qrs_pipeline(self, task: ClaimedTask, llm: LLM, parsed: list[ParsedFile]) -> dict:
+        t_extract = time.perf_counter()
+        requirement = ExtractionAgent(llm, self.rules).extract(task.customer_form, parsed)
+        self.cache.audit(task.task_id, "extracted", f"in {time.perf_counter() - t_extract:.2f}s")
+        completeness = apply_deterministic_overrides(requirement, self.rules)
+        classification, rag_cases = self._classify_and_retrieve(task.task_id, llm, requirement, parsed)
+        t_calc = time.perf_counter()
+        calc = self.engine.calculate(requirement, classification)
+        self.cache.audit(task.task_id, "calculated", f"in {time.perf_counter() - t_calc:.3f}s")
+        if calc.manual_review_required:
+            t_review = time.perf_counter()
+            review = ReviewAgent(llm, self.rules).review(requirement, classification, calc, rag_cases)
+            self.cache.audit(task.task_id, "reviewed", f"in {time.perf_counter() - t_review:.2f}s")
+        else:
+            # 引擎判定无需人工审核时跳过 LLM 审核，减少一次慢调用（提速）
+            review = ReviewLLMOutput(reviewer_notes=[], extra_review_reasons=[])
+            self.cache.audit(task.task_id, "reviewed", "skipped (no manual review required)")
+        return build_result(
+            task=task,
+            requirement=requirement,
+            classification=classification,
+            calc=calc,
+            settings=self.settings,
+            missing_key_fields=completeness.missing_key_fields,
+            review=review,
+            rag_cases=rag_cases,
+        )
 
     def _save_snapshot(self, task_id: str, result: dict) -> None:
         self.settings.snapshot_dir.mkdir(parents=True, exist_ok=True)
@@ -329,6 +408,99 @@ def build_result(
             "calculation_snapshot": snapshot,
         },
     }
+
+
+def build_ai_quote_result(
+    task: ClaimedTask,
+    requirement: ProjectRequirement,
+    classification,
+    evaluation: AiQuoteEvaluation,
+    pricing,
+    settings: WorkerSettings,
+    missing_key_fields: list[str],
+    image_summary: str,
+    similar_cases: list[dict],
+    project_type: str,
+    category: str,
+    category_name: str,
+) -> dict:
+    """AI 报价方法结果：评估参数与价格全部来自 ai_quote 模块，可审计复现。"""
+    snapshot = {**pricing.calculation_snapshot}
+    snapshot["similar_cases"] = similar_cases
+    snapshot["image_summary"] = image_summary
+    snapshot["ai_analysis"] = evaluation.model_dump(mode="json")
+    return {
+        "result_schema_version": "1.0",
+        "agent": {"agent_id": settings.agent_id, "agent_version": settings.agent_version},
+        "runtime": {
+            "ollama_model": settings.ollama_model,
+            "rule_set_version": pricing.rule_set_version,
+            "prompt_versions": settings.prompt_versions,
+        },
+        "result": {
+            "project_type": project_type,
+            "category": category,
+            "category_name": category_name,
+            "completeness_score": requirement.completeness_score,
+            "classification_confidence": float(
+                classification.confidence if classification.confidence is not None else 0.5
+            ),
+            "estimated_hours": {"total": evaluation.estimated_hours},
+            "price": pricing.price,
+            "manual_review_required": pricing.manual_review_required,
+            "manual_review_reasons": list(pricing.review_reasons),
+            "missing_information": sorted(set(missing_key_fields) | set(requirement.unknowns)),
+            "assumptions": requirement.assumptions,
+            "exclusions": requirement.exclusions,
+            "clarification_questions": requirement.clarification_questions,
+            "reviewer_notes": [],
+            "calculation_snapshot": snapshot,
+        },
+    }
+
+
+def _requirement_text(form: dict, requirement: ProjectRequirement) -> str:
+    """拼装喂给 AI 评估提示词的需求文本（原型 main.py 的 requirement_text）。"""
+    parts = []
+    if form.get("project_name"):
+        parts.append(f"项目名称：{form['project_name']}")
+    if form.get("customer_description"):
+        parts.append(f"客户需求：{form['customer_description']}")
+    if requirement.function_description:
+        parts.append(f"功能描述：{requirement.function_description}")
+    if requirement.provided_materials:
+        parts.append("提供资料：" + "、".join(requirement.provided_materials))
+    return "\n".join(parts) or "（无文字需求）"
+
+
+def _format_similar_cases(rag_cases: list[tuple[CaseRecord, float]]) -> list[dict]:
+    """把 RAG 脱敏案例转成 AI 评估提示词里的相似案例 JSON。"""
+    out = []
+    for case, score in rag_cases:
+        out.append(
+            {
+                "case_id": case.case_id,
+                "project_type": case.project_type,
+                "category": case.category,
+                "case_summary": case.summary,
+                "deliverables": case.deliverables,
+                "typical_hours": case.typical_hours,
+                "price_range_cny": list(case.price_range_cny) if case.price_range_cny else None,
+                "similarity_score": round(score, 4),
+            }
+        )
+    return out
+
+
+def _days_until_deadline(date_str: str | None) -> float | None:
+    """从交付日期字符串估算剩余天数（用于加急等级判定；无法解析返回 None）。"""
+    if not date_str:
+        return None
+    try:
+        deadline = date.fromisoformat(str(date_str).strip()[:10])
+        return float(max((deadline - date.today()).days, 0))
+    except ValueError:
+        return None
 
 
 def sanitize_name(name: str) -> str:
