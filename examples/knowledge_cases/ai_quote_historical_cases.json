@@ -1,0 +1,142 @@
+[
+  {
+    "case_id": "aiq_0001",
+    "project_type": "machined_part",
+    "category": "product_structure",
+    "summary": "轴套类机械加工零件的工艺设计：编制毛坯图、工艺过程卡与工序卡，工艺路线含粗车、精车与钻孔共5道工序；无三维建模与装配，复杂度低，属单零件工艺类项目。",
+    "deliverables": ["毛坯图", "工艺过程卡", "工序卡"],
+    "risk_notes": ["毛坯图为示意用途，非加工详图", "工序与孔径参数需以客户零件图为准"],
+    "typical_hours": 2,
+    "price_range_cny": [100, 100]
+  },
+  {
+    "case_id": "aiq_0002",
+    "project_type": "mechanism_design",
+    "category": "mechanism_design",
+    "summary": "电动滑板车角度调节与折叠机构设计：实现左右摆动90度与角度调节，重点解决角度固定方案，融合外观与机构设计，交付外观设计图、机构设计图与3D模型。",
+    "deliverables": ["外观设计图", "机构设计图", "3D模型"],
+    "risk_notes": ["角度调节机构固定方案不明确", "需平衡外观与功能需求"],
+    "typical_hours": 4,
+    "price_range_cny": [600, 600]
+  },
+  {
+    "case_id": "aiq_0003",
+    "project_type": "single_station_machine",
+    "category": "machine_design",
+    "summary": "塑封机自动化设备设计：实现塑封袋自动抓取、平移、注料与90度旋转，核心机构含伸缩/无杆/顶升/旋转气缸、真空吸盘与拨指夹，集成传感器与保护罩，交付3D模型、机构设计图与控制原理图。",
+    "deliverables": ["3D模型", "机构设计图", "控制原理图"],
+    "risk_notes": ["多气缸协同动作与抓取时序需仔细设计", "传感器集成与安全防护需确认"],
+    "typical_hours": 8,
+    "price_range_cny": [2400, 2400]
+  },
+  {
+    "case_id": "aiq_0004",
+    "project_type": "single_station_machine",
+    "category": "machine_design",
+    "summary": "液压辊压设备概念设计：设备含四角液压缸与滚筒系统，用于调整材料宽度与厚度控制；仅需概念方案与工程图，交付1张工程图，液压与滚筒结构参数由客户后续确认。",
+    "deliverables": ["工程图"],
+    "risk_notes": ["液压系统与滚筒参数需客户后续确认", "概念设计阶段，细节由客户调整"],
+    "typical_hours": 1,
+    "price_range_cny": [300, 300]
+  },
+  {
+    "case_id": "aiq_0005",
+    "project_type": "sheet_metal_part",
+    "category": "sheet_metal_cabinet",
+    "summary": "机床门板改造为滑动护罩结构：将两扇门板改为滑动式护罩，设计框架连接、直线导轨与轴承配件集成并安装到设备上，交付3D模型。",
+    "deliverables": ["3D模型"],
+    "risk_notes": ["需与既有设备安装接口与空间匹配"],
+    "typical_hours": 2,
+    "price_range_cny": [350, 350]
+  },
+  {
+    "case_id": "aiq_0006",
+    "project_type": "mechanism_design",
+    "category": "mechanism_design",
+    "summary": "2T1R并联机构设计：依据机构简图与文字描述建模，按100mm方形底板定义基准，保证动平台可运动，交付3D模型与零件文件。",
+    "deliverables": ["3D模型", "零件文件"],
+    "risk_notes": ["无具体尺寸，基准按100mm方形底板自行定义"],
+    "typical_hours": 1,
+    "price_range_cny": [200, 200]
+  },
+  {
+    "case_id": "aiq_0007",
+    "project_type": "mechanism_design",
+    "category": "mechanism_design",
+    "summary": "曲柄机构设计：无具体尺寸要求，仅需符合使用要求，完成3D建模与2D图纸输出，交付3D模型与2D图纸。",
+    "deliverables": ["3D模型", "2D图纸"],
+    "risk_notes": ["无具体尺寸，验收以使用要求为准"],
+    "typical_hours": 0.5,
+    "price_range_cny": [50, 50]
+  },
+  {
+    "case_id": "aiq_0008",
+    "project_type": "mechanism_design",
+    "category": "mechanism_design",
+    "summary": "Z轴移动机构建模：实现类似圆柱面的弧面移动（纵横与上下方向），包含操作平台与PLC控制台示意，采用双丝杆驱动，交付3D模型。",
+    "deliverables": ["3D模型"],
+    "risk_notes": ["弧面运动与参考模型一致性需确认", "PLC控制台仅为示意，不含电气设计"],
+    "typical_hours": 2,
+    "price_range_cny": [400, 400]
+  },
+  {
+    "case_id": "aiq_0009",
+    "project_type": "mechanism_design",
+    "category": "mechanism_design",
+    "summary": "夹爪机构建模与运动仿真：适配约30mm立方物体，完成夹爪结构设计、往复运动仿真视频与零件文件输出，交付3D模型、运动仿真视频与零件文件。",
+    "deliverables": ["3D模型", "运动仿真视频", "零件文件"],
+    "risk_notes": ["被夹物体尺寸为大致适配，需确认"],
+    "typical_hours": 1,
+    "price_range_cny": [150, 150]
+  },
+  {
+    "case_id": "aiq_0010",
+    "project_type": "mechanism_design",
+    "category": "mechanism_design",
+    "summary": "螺旋桨齿轮机构修改：基于参考模型修改桨叶形状并简化发动机绘制，输出3D模型，属既有模型改造类任务。",
+    "deliverables": ["3D模型"],
+    "risk_notes": ["基于参考模型改造，接口与外形需对齐"],
+    "typical_hours": 0.5,
+    "price_range_cny": [80, 80]
+  },
+  {
+    "case_id": "aiq_0011",
+    "project_type": "mechanism_design",
+    "category": "mechanism_design",
+    "summary": "连杆机构设计：无齿轮结构，两根连杆实现往复运动，完成3D建模、装配与运动仿真动画输出，交付3D模型、装配与运动仿真动画。",
+    "deliverables": ["3D模型", "装配", "运动仿真动画"],
+    "risk_notes": ["往复行程与运动仿真要求需确认"],
+    "typical_hours": 1,
+    "price_range_cny": [80, 80]
+  },
+  {
+    "case_id": "aiq_0012",
+    "project_type": "drawing_modeling",
+    "category": "drawing_modeling",
+    "summary": "壳体类产品Creo三维建模：对三个产品（含抽拉盒等壳体件）调整壁厚、添加边缘导向与底部点状定位、设置约5度脱模斜度并设计抽拉盒两段式中空圆柱结构，交付3D模型。",
+    "deliverables": ["3D模型"],
+    "risk_notes": ["壁厚/定位/脱模结构调整点多，需逐项按客户标注确认"],
+    "typical_hours": 2,
+    "price_range_cny": [300, 300]
+  },
+  {
+    "case_id": "aiq_0013",
+    "project_type": "drawing_modeling",
+    "category": "drawing_modeling",
+    "summary": "游戏摇杆3D建模：按外观相似要求建模、组装并赋予材质，不画内部结构，交付3D模型。",
+    "deliverables": ["3D模型"],
+    "risk_notes": ["外观相似度为主观要求，验收标准需确认"],
+    "typical_hours": 0.5,
+    "price_range_cny": [100, 100]
+  },
+  {
+    "case_id": "aiq_0014",
+    "project_type": "drawing_modeling",
+    "category": "drawing_modeling",
+    "summary": "合页产品建模：按比例尺寸（1:42，后调整为×4.2）完成建模与组装，交付3D模型。",
+    "deliverables": ["3D模型"],
+    "risk_notes": ["建模比例多次调整，最终比例需确认"],
+    "typical_hours": 0.5,
+    "price_range_cny": [80, 80]
+  }
+]
