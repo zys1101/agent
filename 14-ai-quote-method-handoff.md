@@ -453,8 +453,50 @@ docker compose run --rm quote-agent python scripts/run_ai_quote.py `
 
 ---
 
-## 12. 版本记录
+## 12. 服务端改造清单（按 09-server-backend-dev.md 落地时逐项核对）
+
+### 12.1 `complete` 结果 Schema 放行新字段（否则 422）
+
+AI 报价模式（`calculation_snapshot.engine = "ai_quote"`）的 `complete` 结果相比 QRS 模式新增/变化：
+
+- `calculation_snapshot` 新增：`engine`、`ai_analysis`（评估参数）、`similar_cases`、`image_summary`、`completeness_score`；
+- `project_type` 可能是业务大类 key（`mechanism_design`、`drawing_modeling` 等），不再是纯 `project_types` 枚举；
+- `estimated_hours.total` 允许小数（如 0.5、2.5）。
+
+`result.schema.ts`（ajv）需允许上述字段，否则 Worker 回传会被 422 拒绝。
+
+### 12.2 附件下载 URL 必须 HTTPS
+
+`download_url` 拼接处（`AGENT_FILE_BASE_URL` / uploads 路由）统一使用 `https://` 前缀；Worker 已支持跟随 301 重定向兜底，但生产环境仍应直接下发 https URL。
+
+### 12.3 服务端二次审核适配（quote-review.service.ts）
+
+识别 `calculation_snapshot.engine == "ai_quote"` 时：
+
+- 保留：需求完整度 < 0.80、建议价 ≥ 阈值（`REVIEW_AMOUNT_THRESHOLD_CNY`）、`missing_information` 非空；
+- 新增：`ai_analysis.urgency_level >= 4`（加急/特急）→ 强制审核；`ai_analysis.complexity_tier == "complex"` 且加急 → 强制审核；
+- 不再依赖 QRS 专属字段：`estimated_standard_cycle_days`、`precision`、`complexity_factor × risk_factor × rush_factor` 乘积。
+
+### 12.4 配置
+
+```env
+RULE_SET_VERSION=1.0.0-ai-quote
+REVIEW_AMOUNT_THRESHOLD_CNY=50000   # AI 报价多为百元到几千元，此阈值几乎不触发，按业务决定是否下调
+REVIEW_COMPLETENESS_BELOW=0.80
+AI_QUOTE_REVIEW_URGENCY_GE=4        # 新增：加急等级 >= 该值强制审核
+```
+
+### 12.5 不需要改的部分
+
+- 表结构（`quote_project` / `quote_task` / `quote` / `agent_credential` / `agent_audit_log`）；
+- `claim` / `heartbeat` / `fail` 接口、租约、幂等、COS 签名 URL 机制；
+- 若服务端存在任何“自己算价 / 改价”逻辑：**移除**，价格只信 Worker 回传（或按本文档第 6 节实现同款公式后回写）。
+
+---
+
+## 13. 版本记录
 
 | 版本 | 日期 | 修改说明 | 审批人 |
 |---|---|---|---|
+| `1.1.0` | 2026-08-11 | 增加服务端改造清单（结果 Schema 放行、https 下载 URL、二次审核适配、配置） | 待指定 |
 | `1.0.0` | 2026-08-11 | 创建：AI 报价方法（原型法）后端对接文档 | 待指定 |
