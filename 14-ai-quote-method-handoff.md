@@ -465,8 +465,8 @@ AI 报价模式（`calculation_snapshot.engine = "ai_quote"`）的 `complete` �
 
 AI 报价模式与原型一致，**不做需求完整度评估、不做项目分类**：
 
-- `result.completeness_score`、`result.classification_confidence` 为占位值 `1.0`（服务端 schema 要求 number；表示未做该项评估，不会触发服务端“完整度不足/置信度低”审核）；
-- `calculation_snapshot.completeness_score` 同为 `1.0`；
+- `result.completeness_score` 为占位值 `1.0`、`result.classification_confidence` 为占位值 `0.99`（服务端 schema 要求 number；表示未做该项评估，不会触发服务端“完整度不足/置信度低”审核；`classification_confidence` 服务端列为 `decimal(4,4)`，最大 0.9999，**不能填 1.0**）；
+- `calculation_snapshot.completeness_score` 同为 `1.0`，`calculation_snapshot.classification` 含 `{project_type, confidence: 0.99, category}` 兼容字段；
 - `result.missing_information`、`result.clarification_questions` 为空数组；
 - **始终输出价格**：`price.recommended` 非空（金额 < 0.60 完整度等概念在 AI 报价模式不适用）。
 

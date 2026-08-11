@@ -113,7 +113,7 @@ def test_ai_quote_default_mode_outputs_prototype_scale(tmp_path):
         # 与原型一致：不做完整度/分类评估，不报信息不足；
         # 占位值 1.0 兼容服务端 schema（要求 number）
         assert summary["completeness_score"] == 1.0
-        assert summary["classification_confidence"] == 1.0
+        assert summary["classification_confidence"] == 0.99
         assert summary["missing_information"] == []
         assert summary["clarification_questions"] == []
         assert summary["reviewer_notes"] == []
@@ -126,6 +126,7 @@ def test_ai_quote_default_mode_outputs_prototype_scale(tmp_path):
         snapshot = summary["calculation_snapshot"]
         assert snapshot["engine"] == "ai_quote"
         assert snapshot["completeness_score"] == 1.0
+        assert snapshot["classification"]["confidence"] == 0.99
         assert snapshot["ai_analysis"]["estimated_hours"] == 8
         assert snapshot["ai_analysis"]["urgency_level"] == 3  # 系统覆盖生效
         assert "similar_cases" in snapshot
