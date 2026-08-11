@@ -269,7 +269,8 @@ function deliveryDaysToUrgency(days: number | null, isUrgent = false): number {
 | 0.60–0.79 | final × 0.85 | final | final × 1.20 |
 | < 0.60 | 不出固定报价（`recommended = null`，转“需求梳理/预研”报价） | | |
 
-服务端没有完整度时，可只返回 `recommended = final`，min/max 为空。
+AI 报价模式（不评估完整度）输出**单一价格**：`minimum = recommended = maximum = final`，
+避免前端把 null 渲染成 0；仅当按完整度生成区间时才使用上表的 min/max 系数。
 
 ### 8.2 人工审核标记
 

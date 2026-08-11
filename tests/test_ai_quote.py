@@ -58,7 +58,13 @@ def test_golden_normal(pricing: AiQuotePricing):
     assert result.main_price == 400
     assert result.addon_price == 0
     assert result.final_price == 400
-    assert result.price["recommended"] == 400
+    # 单一价格：min/max 与 recommended 相同（兼容前端按区间展示）
+    assert result.price == {
+        "currency": "CNY",
+        "minimum": 400,
+        "recommended": 400,
+        "maximum": 400,
+    }
     assert not result.manual_review_required
 
 

@@ -207,19 +207,23 @@ class AiQuotePricing:
         unit = rules.quote_rounding_unit_cny
         final_price = self._round_to_unit(main_price + addon_price, unit)
 
-        # ---- 价格区间（可选：按需求完整度） ----
+        # ---- 价格输出 ----
+        # AI 报价为单一价格；不传完整度时 min/max 与 recommended 相同（兼容前端按区间展示，
+        # 避免 null 被渲染成 0）。传完整度时按完整度档位生成真实区间。
         quote_type = rules.quote_type_default
         price: dict[str, float | None] = {
             "currency": rules.currency,
-            "minimum": None,
+            "minimum": final_price,
             "recommended": final_price,
-            "maximum": None,
+            "maximum": final_price,
         }
         if completeness_score is not None:
             tier_rule = self._price_range_tier(completeness_score)
             if tier_rule is None:
                 quote_type = "preliminary_research"
                 price["recommended"] = None
+                price["minimum"] = None
+                price["maximum"] = None
                 review_reasons.append("completeness_below_0_60")
             else:
                 price["minimum"] = self._round_to_unit(final_price * tier_rule.min_factor, unit)
