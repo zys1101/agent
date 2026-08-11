@@ -58,12 +58,12 @@ def test_golden_normal(pricing: AiQuotePricing):
     assert result.main_price == 400
     assert result.addon_price == 0
     assert result.final_price == 400
-    # 单一价格：min/max 与 recommended 相同（兼容前端按区间展示）
+    # 推荐价 + 区间：400 × [0.85, 1.15] = [340, 460]
     assert result.price == {
         "currency": "CNY",
-        "minimum": 400,
+        "minimum": 340,
         "recommended": 400,
-        "maximum": 400,
+        "maximum": 460,
     }
     assert not result.manual_review_required
 
@@ -240,36 +240,6 @@ def test_evaluator_rejects_zero_hours(rules: AiQuoteRules):
         AiQuoteEvaluator(llm, rules).evaluate(requirement_text="设计一个支架")
 
 
-def test_evaluator_clamps_3d_only_hours(rules: AiQuoteRules):
-    """仅 3D 模型（无装配体/图纸）任务：模型误估 24h 时，确定性钳制到 6h（6h×50=300元）。"""
-    payload = make_evaluation(
-        estimated_hours=24,
-        deliverable_detail=AiQuoteDeliverableDetail(model_count=1),
-    ).model_dump(mode="json")
-    llm = FakeLLM(payload)
-    result = AiQuoteEvaluator(llm, rules).evaluate(requirement_text="设计上边的液压部分和滚筒")
-    assert result.estimated_hours == 6.0
-    # 钳制后价格回到 300 元量级
-    price = AiQuotePricing(rules).calculate(result)
-    assert price.final_price == 300
-
-
-def test_evaluator_does_not_clamp_when_drawings_included(rules: AiQuoteRules):
-    """含图纸/装配体任务不受 3D-only 钳制影响。"""
-    payload = make_evaluation(
-        estimated_hours=48,
-        deliverable_detail=AiQuoteDeliverableDetail(
-            assembly_count=1,
-            part_drawing_count=8,
-            machining_drawing_count=2,
-            model_count=1,
-        ),
-    ).model_dump(mode="json")
-    llm = FakeLLM(payload)
-    result = AiQuoteEvaluator(llm, rules).evaluate(requirement_text="单工位非标设备")
-    assert result.estimated_hours == 48
-
-
 def test_evaluator_passes_images(rules: AiQuoteRules):
     llm = FakeLLM(make_evaluation().model_dump(mode="json"))
     AiQuoteEvaluator(llm, rules).evaluate(
@@ -300,12 +270,18 @@ def test_evaluation_prompt_unknown_delivery_days(rules: AiQuoteRules):
     assert "未指定" in prompt
 
 
-def test_evaluation_prompt_contains_tier_constraint(rules: AiQuoteRules):
+def test_evaluation_prompt_contains_historical_calibration(rules: AiQuoteRules):
     evaluator = AiQuoteEvaluator(FakeLLM({}), rules)
     prompt = evaluator.build_evaluation_prompt(requirement_text="设计一个支架")
-    assert "硬性档位约束" in prompt
+    # 通用校准：历史成交案例表 + 档位自检 + 工时×50≈成交价
+    assert "历史成交案例参考" in prompt
+    assert "历史成交案例是强参考" in prompt
     assert "A档" in prompt
-    assert "交付物仅含3D模型或示意图" in prompt
+    assert "estimated_hours = 成交价 ÷ 50" in prompt
+    assert "决策流程" in prompt
+    # 校准表数据来自配置（14 条真实成交案例）
+    assert "液压辊压设备概念设计" in prompt
+    assert "塑封机自动化设备" in prompt
 
 
 def test_golden_simple_sketch_300_cny(pricing: AiQuotePricing):
@@ -324,9 +300,9 @@ def test_golden_simple_sketch_300_cny(pricing: AiQuotePricing):
     assert result.final_price == 300
     assert result.price == {
         "currency": "CNY",
-        "minimum": 300,
+        "minimum": 255,
         "recommended": 300,
-        "maximum": 300,
+        "maximum": 345,
     }
 
 

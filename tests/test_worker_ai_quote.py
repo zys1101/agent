@@ -104,9 +104,9 @@ def test_ai_quote_default_mode_outputs_prototype_scale(tmp_path):
         # 交期 10 天 -> 加急 3（正常系数 1.0），8h × 50元/h = 400
         assert summary["price"] == {
             "currency": "CNY",
-            "minimum": 400,
+            "minimum": 340,
             "recommended": 400,
-            "maximum": 400,
+            "maximum": 460,
         }
         assert summary["manual_review_required"] is False
         assert summary["manual_review_reasons"] == []
@@ -163,8 +163,8 @@ def test_ai_quote_always_prices_even_with_sparse_info(tmp_path):
         summary = result["result"]
 
         assert summary["price"]["recommended"] == 400
-        assert summary["price"]["minimum"] == 400
-        assert summary["price"]["maximum"] == 400
+        assert summary["price"]["minimum"] == 340
+        assert summary["price"]["maximum"] == 460
         assert summary["manual_review_required"] is False
         assert summary["missing_information"] == []
     finally:

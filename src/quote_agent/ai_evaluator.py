@@ -19,11 +19,6 @@ from .ai_quote import (
 )
 from .llm import LLM, LLMOutputError
 
-# 确定性量级安全网：仅 3D 模型（无装配体、无任何图纸/卡片）的示意图类任务，
-# 工时上限 6 小时（6h × 50元/h = 300元，与原型成交价量级一致）。
-# 防止本地模型忽略提示词硬约束时把工时估到 10h+ 导致报价离谱。
-AI_QUOTE_3D_ONLY_HOURS_CAP = 6.0
-
 # 步骤 1：图片理解（原样复刻原型 PROMPT_IMAGE_DESC）
 PROMPT_IMAGE_DESC = """你是一位经验丰富的机械设计师。请仔细分析以下客户上传的需求图片，结合客户的文字描述，总结这个设计任务的核心特点。
 【客户文字需求】
@@ -39,6 +34,8 @@ PROMPT_IMAGE_DESC = """你是一位经验丰富的机械设计师。请仔细分
 # 步骤 4：综合评估（原样复刻原型 PROMPT_EVALUATION）
 PROMPT_EVALUATION = """你是一位经验丰富的机械设计师，正在评估一个新订单的设计工时和报价参数。
 {reference_table}
+【历史成交案例参考（强校准依据，价格区间中间值）】
+{historical_cases}
 【客户文字需求】
 {requirement_text}
 【图片理解总结】
@@ -73,16 +70,17 @@ PROMPT_EVALUATION = """你是一位经验丰富的机械设计师，正在评估
 注意：
 - complexity_tier 只能是 simple、normal、complex 三选一
 - urgency_level 直接使用系统给定的值 {urgency_level}，不要自己判断
-- 先判断任务档位，再对照参考价格表估算工时（最终价格 = 工时 × 50元/h）：
-  A档-示意图/概念设计（仅方案、仅3D模型、无加工图）：简单任务，工时约1-6小时，常见6小时，对应约300元
-  B档-常规零件/机构设计（含2D图纸或出图）：工时约6-20小时，对应约300-1000元
-  C档-整机/复杂设备/加工图纸：工时约40-100小时，对应约2000-5000元
-- 客户只要求3D模型或示意图、不涉及加工图纸/详细出图时，一律按A档评估，不得按整机或加工图档位
-- 硬性档位约束：当 deliverable_detail 中零件图/加工图/装配图/工序卡等数量全部为0、交付物仅含3D模型或示意图时，
-  estimated_hours 必须在 1-8 之间（A档），禁止输出 10 小时以上的数值
-- 相似历史案例的成交价是强参考：新订单与案例越相似，工时越应使 工时×50元/h 贴近案例价格量级
-  （例如案例成交价300元 → 约6小时；1200元 → 约24小时；2400元 → 约48小时）
-- 示例：客户说"设计上边的液压部分和滚筒，示意图，仅3D模型" → 属于A档示意图，约6小时，对应300元
+- 决策流程：先预估该订单的市场成交价（元），再令 estimated_hours = 成交价 ÷ 50，
+  取接近的档位数值（1,2,3,4,6,8,10,12,16,20,24,32,40,48,60,80,100）
+- 价格量级（与历史成交一致，最终价格 = 工时 × 50元/h）：
+  A档-示意图/概念设计/仅3D模型（无加工图）：
+    * 简单建模/外观/按参考修改/无尺寸要求 → 50-100元（1-2小时）
+    * 简单机构/常规示意图/概念方案 → 约300元（6小时）
+  B档-常规零件/机构设计（含2D图纸或出图）：350-600元（7-12小时）；复杂常规 600-1200元（12-24小时）
+  C档-整机/复杂设备/加工图纸/多气缸协同+控制原理图：2000-5000元（40-100小时）
+- 客户没有具体尺寸/公差要求、仅按参考模型或示意图建模、或说明"仅需符合使用要求"时，
+  一律按最低量级（50-100元，1-2小时）评估，不得高估
+- 历史成交案例是强参考：新订单越接近某案例，成交价越应贴近该案例（工时 = 成交价 ÷ 50）
 - 参考价格表换算：一个示意图300-500元对应约6-10小时，一个加工图纸2000-3000元对应约40-60小时
 只输出JSON，不要输出其他任何内容。"""
 
@@ -130,6 +128,7 @@ class AiQuoteEvaluator:
         )
         return PROMPT_EVALUATION.format(
             reference_table=self.rules.reference_price_table,
+            historical_cases=self.rules.historical_price_reference,
             requirement_text=requirement_text,
             image_summary=image_summary,
             similar_cases=json.dumps(similar_cases or [], ensure_ascii=False, indent=2),
@@ -174,21 +173,4 @@ class AiQuoteEvaluator:
         # 兜底：工时必须为正数，否则视为无效输出
         if result.estimated_hours <= 0:
             raise LLMOutputError(f"invalid estimated_hours: {result.estimated_hours}")
-        # 量级安全网：仅 3D 模型（无装配体/图纸）的示意图任务，工时不得超过上限
-        if _is_simple_3d_only(result.deliverable_detail) and result.estimated_hours > AI_QUOTE_3D_ONLY_HOURS_CAP:
-            result.estimated_hours = AI_QUOTE_3D_ONLY_HOURS_CAP
         return result
-
-
-def _is_simple_3d_only(detail) -> bool:
-    """判断是否为"仅 3D 模型"的示意图类任务（无装配体、无任何图纸/卡片/说明书）。"""
-    return (
-        detail.assembly_count == 0
-        and detail.part_drawing_count == 0
-        and detail.machining_drawing_count == 0
-        and detail.process_card_count == 0
-        and detail.procedure_card_count == 0
-        and detail.blank_drawing_count == 0
-        and detail.instruction_book_count == 0
-        and detail.model_count >= 1
-    )

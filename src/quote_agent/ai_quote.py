@@ -86,9 +86,12 @@ class AiQuoteRules(BaseModel):
     deliverable_prices: dict[str, float]
     enable_deliverable_addon: bool = False
     quote_rounding_unit_cny: float = Field(gt=0)
+    price_band_min: float = Field(default=0.85, gt=0, le=1)
+    price_band_max: float = Field(default=1.15, ge=1)
     price_range_by_completeness: dict[str, PriceRangeTier]
     manual_review: ManualReviewConfig
     reference_price_table: str
+    historical_price_reference: str = ""
     source_sha256: str = ""
 
     @classmethod
@@ -115,6 +118,8 @@ class AiQuoteRules(BaseModel):
         scores = sorted(tier.min_score for tier in tiers)
         if scores and scores[0] < 0.60:
             raise ValueError("price_range_by_completeness lowest min_score must be >= 0.60")
+        if self.price_band_max < self.price_band_min:
+            raise ValueError("price_band_max must be >= price_band_min")
         return self
 
     def urgency_label(self, level: int) -> str:
@@ -208,14 +213,14 @@ class AiQuotePricing:
         final_price = self._round_to_unit(main_price + addon_price, unit)
 
         # ---- 价格输出 ----
-        # AI 报价为单一价格；不传完整度时 min/max 与 recommended 相同（兼容前端按区间展示，
-        # 避免 null 被渲染成 0）。传完整度时按完整度档位生成真实区间。
+        # AI 报价输出推荐价与区间：不传完整度时按 price_band_min/max 生成区间
+        # （兼容前端展示，且容纳现有数据量下约 ±15% 的报价误差）。
         quote_type = rules.quote_type_default
         price: dict[str, float | None] = {
             "currency": rules.currency,
-            "minimum": final_price,
+            "minimum": self._round_to_unit(final_price * rules.price_band_min, unit),
             "recommended": final_price,
-            "maximum": final_price,
+            "maximum": self._round_to_unit(final_price * rules.price_band_max, unit),
         }
         if completeness_score is not None:
             tier_rule = self._price_range_tier(completeness_score)

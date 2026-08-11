@@ -281,8 +281,10 @@ function deliveryDaysToUrgency(days: number | null, isUrgent = false): number {
 | 0.60–0.79 | final × 0.85 | final | final × 1.20 |
 | < 0.60 | 不出固定报价（`recommended = null`，转“需求梳理/预研”报价） | | |
 
-AI 报价模式（不评估完整度）输出**单一价格**：`minimum = recommended = maximum = final`，
-避免前端把 null 渲染成 0；仅当按完整度生成区间时才使用上表的 min/max 系数。
+AI 报价模式（不评估完整度）输出**推荐价 + 区间**：`recommended = final`，
+`minimum = final × 0.85`、`maximum = final × 1.15`（带宽在 `config/ai_quote_rules.yaml`
+的 `price_band_min/max` 配置，按业务可调；用于兼容前端区间展示并容纳约 ±15% 的报价误差）。
+仅当按完整度生成区间时才使用上表的 min/max 系数。
 
 ### 8.2 人工审核标记
 

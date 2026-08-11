@@ -47,7 +47,7 @@
 
 - Worker 默认以 `PRICING_MODE=ai_quote` 运行：LLM 只评估工时/复杂度/加急/交付物（提示词含参考价格表），价格由 `src/quote_agent/ai_quote.py` 按 `工时 × 50元/h × 复杂度系数 × 加急系数 [+ 交付物单价]` 确定性计算，加急等级由系统按交期判定并覆盖。
 - 与 AI_quote 原型一致：**不评估需求完整度、不做项目分类、不因信息不足拒报，始终输出价格**（`completeness_score` 占位 1.0、`classification_confidence` 占位 0.99——服务端列 decimal(4,4) 不能存 1.0；`missing_information`/`clarification_questions` 为空数组）。
-- 价格三字段相同（`minimum = recommended = maximum = 最终价`），避免前端把 null 显示成 0。
+- 报价输出**推荐价 + 区间**：`recommended = final`，`minimum/maximum = final × [0.85, 1.15]`（带宽见 `config/ai_quote_rules.yaml` 的 `price_band_min/max`，可调），兼容前端区间展示并容纳约 ±15% 的报价误差。
 - 评估提示词含"档位自检"（A档示意图 1-6h≈300 元 / B档常规 6-20h / C档整机加工图 40-100h）；交付物仅含 3D 模型（无装配体/图纸）时，工时确定性钳制上限 6 小时，防止简单示意图被估成几十小时。
 - 相似历史案例（`examples/knowledge_cases/`，含 14 条脱敏真实成交案例）通过 Qdrant RAG 检索后拼入评估提示词（需 `RAG_ENABLED=true`）。
 - 旧的 QRS 规则模板引擎保留为 `PRICING_MODE=qrs`（费率卡 180–650 元/h，量级与原型法不同，仅作对比/回退）。
