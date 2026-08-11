@@ -427,6 +427,9 @@ def build_ai_quote_result(
 ) -> dict:
     """AI 报价方法结果：评估参数与价格全部来自 ai_quote 模块，可审计复现。"""
     snapshot = {**pricing.calculation_snapshot}
+    # 服务端 result schema 要求 completeness_score 为 number：
+    # AI 报价模式不做完整度/分类评估，置占位值 1.0（不触发服务端相应审核，与原型行为一致）
+    snapshot["completeness_score"] = 1.0
     snapshot["similar_cases"] = similar_cases
     snapshot["image_summary"] = image_summary
     snapshot["ai_analysis"] = evaluation.model_dump(mode="json")
@@ -443,8 +446,8 @@ def build_ai_quote_result(
             "category": category,
             "category_name": category_name,
             # 与 AI_quote 原型一致：不评估完整度、不做分类，始终输出价格
-            "completeness_score": None,
-            "classification_confidence": None,
+            "completeness_score": 1.0,
+            "classification_confidence": 1.0,
             "estimated_hours": {"total": evaluation.estimated_hours},
             "price": pricing.price,
             "manual_review_required": pricing.manual_review_required,

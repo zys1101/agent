@@ -110,9 +110,10 @@ def test_ai_quote_default_mode_outputs_prototype_scale(tmp_path):
         }
         assert summary["manual_review_required"] is False
         assert summary["manual_review_reasons"] == []
-        # 与原型一致：不做完整度/分类评估，不报信息不足
-        assert summary["completeness_score"] is None
-        assert summary["classification_confidence"] is None
+        # 与原型一致：不做完整度/分类评估，不报信息不足；
+        # 占位值 1.0 兼容服务端 schema（要求 number）
+        assert summary["completeness_score"] == 1.0
+        assert summary["classification_confidence"] == 1.0
         assert summary["missing_information"] == []
         assert summary["clarification_questions"] == []
         assert summary["reviewer_notes"] == []
@@ -124,6 +125,7 @@ def test_ai_quote_default_mode_outputs_prototype_scale(tmp_path):
         # 快照可审计：评估参数、相似案例、图片总结都在
         snapshot = summary["calculation_snapshot"]
         assert snapshot["engine"] == "ai_quote"
+        assert snapshot["completeness_score"] == 1.0
         assert snapshot["ai_analysis"]["estimated_hours"] == 8
         assert snapshot["ai_analysis"]["urgency_level"] == 3  # 系统覆盖生效
         assert "similar_cases" in snapshot
