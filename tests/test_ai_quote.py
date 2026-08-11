@@ -240,6 +240,36 @@ def test_evaluator_rejects_zero_hours(rules: AiQuoteRules):
         AiQuoteEvaluator(llm, rules).evaluate(requirement_text="设计一个支架")
 
 
+def test_evaluator_clamps_3d_only_hours(rules: AiQuoteRules):
+    """仅 3D 模型（无装配体/图纸）任务：模型误估 24h 时，确定性钳制到 6h（6h×50=300元）。"""
+    payload = make_evaluation(
+        estimated_hours=24,
+        deliverable_detail=AiQuoteDeliverableDetail(model_count=1),
+    ).model_dump(mode="json")
+    llm = FakeLLM(payload)
+    result = AiQuoteEvaluator(llm, rules).evaluate(requirement_text="设计上边的液压部分和滚筒")
+    assert result.estimated_hours == 6.0
+    # 钳制后价格回到 300 元量级
+    price = AiQuotePricing(rules).calculate(result)
+    assert price.final_price == 300
+
+
+def test_evaluator_does_not_clamp_when_drawings_included(rules: AiQuoteRules):
+    """含图纸/装配体任务不受 3D-only 钳制影响。"""
+    payload = make_evaluation(
+        estimated_hours=48,
+        deliverable_detail=AiQuoteDeliverableDetail(
+            assembly_count=1,
+            part_drawing_count=8,
+            machining_drawing_count=2,
+            model_count=1,
+        ),
+    ).model_dump(mode="json")
+    llm = FakeLLM(payload)
+    result = AiQuoteEvaluator(llm, rules).evaluate(requirement_text="单工位非标设备")
+    assert result.estimated_hours == 48
+
+
 def test_evaluator_passes_images(rules: AiQuoteRules):
     llm = FakeLLM(make_evaluation().model_dump(mode="json"))
     AiQuoteEvaluator(llm, rules).evaluate(
@@ -268,6 +298,36 @@ def test_evaluation_prompt_unknown_delivery_days(rules: AiQuoteRules):
     evaluator = AiQuoteEvaluator(FakeLLM({}), rules)
     prompt = evaluator.build_evaluation_prompt(requirement_text="设计一个支架")
     assert "未指定" in prompt
+
+
+def test_evaluation_prompt_contains_tier_constraint(rules: AiQuoteRules):
+    evaluator = AiQuoteEvaluator(FakeLLM({}), rules)
+    prompt = evaluator.build_evaluation_prompt(requirement_text="设计一个支架")
+    assert "硬性档位约束" in prompt
+    assert "A档" in prompt
+    assert "交付物仅含3D模型或示意图" in prompt
+
+
+def test_golden_simple_sketch_300_cny(pricing: AiQuotePricing):
+    """回归用例：'液压部分和滚筒，示意图，仅3D模型' -> 6h normal 正常交期 -> 300 元。"""
+    result = pricing.calculate(
+        make_evaluation(
+            part_type="多滚筒传动机构",
+            project_category="机械机构设计",
+            project_subtype="液压部分与滚筒结构设计",
+            deliverables=["3D模型"],
+            complexity_tier="normal",
+            estimated_hours=6,
+            urgency_level=3,
+        )
+    )
+    assert result.final_price == 300
+    assert result.price == {
+        "currency": "CNY",
+        "minimum": 300,
+        "recommended": 300,
+        "maximum": 300,
+    }
 
 
 # ---------------------------------------------------------------- 配置
