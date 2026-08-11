@@ -174,7 +174,8 @@ class Worker:
             if file.local_path:
                 shutil.copyfile(file.local_path, target)
             elif file.download_url:
-                resp = httpx.get(file.download_url, timeout=120)
+                # 跟随 http->https 等重定向：云端可能下发 http 下载 URL 并 301 到 https
+                resp = httpx.get(file.download_url, timeout=120, follow_redirects=True)
                 resp.raise_for_status()
                 target.write_bytes(resp.content)
             else:

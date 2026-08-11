@@ -83,6 +83,7 @@ class CloudClient:
                 json=json_body,
                 headers=self._headers(headers),
                 timeout=self.timeout_s,
+                follow_redirects=True,
             )
         except httpx.HTTPError as exc:
             raise CloudError(f"cloud request failed: {exc}", retryable=True) from exc

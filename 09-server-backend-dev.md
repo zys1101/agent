@@ -366,6 +366,7 @@ backend-api/scripts/seed-demo.ts     # 创建演示任务（本地联调）
 ### 8.2 下发（Worker 下载）
 
 - `claim` 时为每个文件生成 `download_url`（有效期 15 分钟）+ `sha256`；
+- `download_url` 必须使用 `https://` 前缀；若误配成 `http://`，服务器会 301 重定向到 https，Worker 已支持跟随重定向兜底，但生产环境仍应直接下发 https URL；
 - Worker 仅凭签名 URL 下载，不需要任何 COS 密钥；
 - 过期后 Worker 重新 `claim` 或服务端提供刷新接口（MVP：重新 claim）。
 
